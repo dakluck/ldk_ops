@@ -9,6 +9,7 @@ The repository includes native Antigravity skills located in [`.agents/skills/`]
 - **[`inbox-triage`](file:///home/dailey/Development/ldk_ops/.agents/skills/inbox-triage/SKILL.md):** Scans and cleans connected inboxes (`dailey@ldk-international.com`, `dailey.kluck@gmail.com`, `leo@ldk-international.com`), preserving transactional and personal emails while trashing marketing and automated noise.
 - **[`sd-weekend-scout`](file:///home/dailey/Development/ldk_ops/.agents/skills/sd-weekend-scout/SKILL.md):** Searches and curates hyper-local weekend activities in San Diego tailored specifically for daughter (born 10/6/2023), with direct 1-click Google Calendar integration links sent to `ldobashi@gmail.com` and `dailey.kluck@gmail.com`.
 - **[`monthly-pnl-report`](file:///home/dailey/Development/ldk_ops/.agents/skills/monthly-pnl-report/SKILL.md):** Connects to the Mercury API to generate categorized monthly profit and loss statements.
+- **[`reference-analytics`](file:///home/dailey/Development/ldk_ops/.agents/skills/reference-analytics/SKILL.md):** Connects to The Reference App Firestore database (`reference-482005`) to audit user growth, watchbox collections, brand metrics, and in-app feedback.
 
 ---
 
