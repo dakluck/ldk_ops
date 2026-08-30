@@ -45,12 +45,18 @@ class MercuryClient:
 
     def get_transactions(self, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetches transactions, optionally filtered by account_id."""
-        endpoint = "transactions"
-        params = {}
-        if account_id:
-            params['account_id'] = account_id
+        if not account_id:
+            accounts = self.get_accounts()
+            all_txs = []
+            for acc in accounts:
+                aid = acc.get("id")
+                if aid:
+                    txs = self.get_transactions(aid)
+                    all_txs.extend(txs)
+            return all_txs
             
-        data = self._request("GET", endpoint, params=params)
+        endpoint = f"account/{account_id}/transactions"
+        data = self._request("GET", endpoint, params={"limit": 500})
         return data.get("transactions", data.get("data", []))
 
     def update_transaction(self, account_id: str, transaction_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
