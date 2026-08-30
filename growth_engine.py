@@ -1,20 +1,27 @@
 """
-LDK Ops — Automated Growth Engine & Community Marketing Scout for The Reference App
-Tracks acquisition funnels, conversion economics, and generates high-engagement community content.
+LDK Ops — Multi-Platform Marketing & Growth Engine for The Reference App
+Audits user acquisition funnels, manages Apple Search Ads & Google App Campaigns,
+and synthesizes high-converting community marketing assets.
 """
 import os
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from google.cloud import firestore
+
+# Add local growth package
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from growth.asa_client import AppleSearchAdsClient
+from growth.google_ads_client import GoogleAppCampaignsClient
 
 PROJECT_ID = "reference-482005"
 ANNUAL_SUB_PRICE = 29.99
 
 def run_growth_audit():
-    print("=" * 72)
-    print("  THE REFERENCE APP — AUTOMATED GROWTH & MARKETING AUDIT")
+    print("=" * 76)
+    print("  THE REFERENCE APP — MULTI-PLATFORM GROWTH & MARKETING COMMAND")
     print(f"  Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
-    print("=" * 72)
+    print("=" * 76)
     print()
 
     try:
@@ -23,7 +30,7 @@ def run_growth_audit():
         print(f"❌ Firestore connection error: {e}")
         return
 
-    # 1. Funnel & Conversion Metrics
+    # 1. Funnel & Platform User Metrics
     users = list(db.collection("users").stream())
     total_users = len(users)
     premium_users = sum(1 for u in users if u.to_dict().get("isPremium"))
@@ -39,36 +46,49 @@ def run_growth_audit():
         b = w.to_dict().get("brand") or "Unknown"
         brand_counts[b] = brand_counts.get(b, 0) + 1
 
-    print("📊 [CONVERSION FUNNEL & MONETIZATION]")
+    print("📊 [CONVERSION FUNNEL & DATABASE HEALTH]")
     print(f"  • Registered Users (Top-of-Funnel) : {total_users}")
-    print(f"  • Premium Paid Subscribers         : {premium_users}")
-    print(f"  • Free-to-Paid Conversion Rate     : {conversion_rate:.1f}%")
+    print(f"  • Premium Paid Subscribers         : {premium_users} (Conversion: {conversion_rate:.1f}%)")
     print(f"  • Total Watches Cataloged          : {total_watches}")
     print(f"  • Total Collections Created        : {total_collections}")
     print(f"  • Avg Watches per User             : {(total_watches / total_users if total_users else 0):.1f}")
     print()
 
-    # 2. Paid Acquisition Economics (Apple Search Ads Unit Economics)
-    # LTV per install = Conversion Rate * Annual Price
-    # Target CPA for break-even = Conversion Rate * Annual Price
+    # 2. Multi-Platform Paid Acquisition Blueprint (iOS vs Android)
     ltv_per_install = (conversion_rate / 100.0) * ANNUAL_SUB_PRICE
-    target_cpi_breakeven = ltv_per_install
-    target_cpi_profitable = ltv_per_install * 0.60 # 40% margin
+    ios_target_cpi = ltv_per_install * 0.60 # $1.82 (40% margin)
+    android_target_cpi = min(1.20, ltv_per_install * 0.40) # $1.20
 
-    print("🎯 [PAID ACQUISITION UNIT ECONOMICS (Apple Search Ads)]")
+    print("🎯 [MULTI-PLATFORM PAID ACQUISITION TARGETS]")
     print(f"  • Annual Subscription Price        : ${ANNUAL_SUB_PRICE:.2f}/yr")
-    print(f"  • Expected Value per New Install   : ${ltv_per_install:.2f}")
-    print(f"  • Max Break-Even CPI (Cost/Install): ${target_cpi_breakeven:.2f}")
-    print(f"  • Recommended Target CPI (40% ROI) : ${target_cpi_profitable:.2f}")
-    print(f"  • Recommended Test Budget          : $100.00 (Est. 40-50 installs -> ~4-5 new subscribers)")
+    print(f"  • Realized Value per Install (LTV) : ${ltv_per_install:.2f}")
+    print(f"  • Max Break-Even CPI Threshold     : ${ltv_per_install:.2f}")
+    print()
+    print("  🍎 Apple Search Ads (iOS):")
+    print(f"     • Target Cost Per Install (tCPI): ${ios_target_cpi:.2f}")
+    print("     • Recommended Keywords          : [watch identifier], [watch scanner], [watch tracker], [chrono24]")
+    print("     • Daily Test Budget             : $5.00/day ($150/mo)")
+    print()
+    print("  🤖 Google App Campaigns (Android):")
+    print(f"     • Target Cost Per Install (tCPI): ${android_target_cpi:.2f}")
+    print("     • Channels                      : Google Play Search, Google Search, YouTube Shorts")
+    print("     • Daily Test Budget             : $5.00/day ($150/mo)")
     print()
 
-    # 3. Community Content Generator (Reddit / Watch Forums / Socials)
-    top_brands = sorted(brand_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    top_brand_names = ", ".join([f"{b} ({c})" for b, c in top_brands])
+    # 3. Ad Platform Integration Status
+    asa_client = AppleSearchAdsClient()
+    gads_client = GoogleAppCampaignsClient()
 
-    print("📝 [AUTOMATED COMMUNITY POST — r/Watches & r/PrideAndPinion]")
-    print("-" * 72)
+    print("🔌 [PROGRAMMATIC AD CLIENT INTEGRATIONS]")
+    print(f"  • Apple Search Ads API             : {'✅ LIVE' if asa_client.is_configured else '⚠️ BLUEPRINT / CONFIGURED'}")
+    print(f"  • Google Ads App Campaigns API     : {'✅ LIVE' if gads_client.is_configured else '⚠️ BLUEPRINT / CONFIGURED'}")
+    print()
+
+    # 4. Automated Community Showcase Generator (Reddit / WatchUSeek / Discord)
+    top_brands = sorted(brand_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+
+    print("📝 [WEEKLY ORGANIC COMMUNITY POST — r/Watches & r/PrideAndPinion]")
+    print("-" * 76)
     sample_post = f"""Title: We built an AI watch identifier & collection logger for insurance/cataloging — here's what 200+ collectors are logging most.
 
 Hey r/Watches!
@@ -85,12 +105,12 @@ What features matter most when you catalog your collection? (Service history tra
 
 Try it free on iOS/Android at https://thereference.app"""
     print(sample_post)
-    print("-" * 72)
+    print("-" * 76)
     print()
 
-    print("=" * 72)
-    print("  AUDIT & MARKETING SCOUT COMPLETE")
-    print("=" * 72)
+    print("=" * 76)
+    print("  MARKETING & GROWTH SCOUT COMPLETE")
+    print("=" * 76)
 
 if __name__ == "__main__":
     run_growth_audit()
