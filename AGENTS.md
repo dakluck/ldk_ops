@@ -29,6 +29,7 @@ Agents operating in `ldk_ops` have access to the following native skills in [`.a
 | Skill | Description | Primary Scripts |
 | :--- | :--- | :--- |
 | **`reference-analytics`** | Live Firestore user metrics, conversion rates, and feedback. | `reference_analytics.py`, `firebase_oauth_helper.py` |
+| **`growth-scout`** | App growth auditing, conversion economics, and community content generation. | `growth_engine.py` |
 | **`inbox-triage`** | High-speed batch triage and cleanup of connected mailboxes. | `inbox_cleaner.py` |
 | **`sd-weekend-scout`** | Curated toddler weekend ideas with 1-click Google Calendar links. | `sd_weekend_scout.py` |
 | **`monthly-pnl-report`** | Real-time Mercury bank financial analysis and monthly P&L. | `finance_agent/reports/monthly_report.py` |
