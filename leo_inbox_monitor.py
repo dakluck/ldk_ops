@@ -87,9 +87,13 @@ def generate_ics_invite(event_data):
         "ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Lauren Dobashi:mailto:lmdobashi@gmail.com",
         "ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Dailey Kluck:mailto:dailey.kluck@gmail.com",
         f"DTSTART;TZID=America/Los_Angeles:{s_dt.strftime(fmt)}",
-        f"DTEND;TZID=America/Los_Angeles:{e_dt.strftime(fmt)}",
+        f"DTEND;TZID=America/Los_Angeles:{e_dt.strftime(fmt)}"
+    ]
+    if event_data.get("recurrence"):
+        lines.append(f"{event_data['recurrence']}")
+    lines.extend([
         f"SUMMARY:{event_data['title']}",
-        f"DESCRIPTION:{event_data['description'].replace(chr(10), '\n')}",
+        f"DESCRIPTION:{event_data['description'].replace(chr(10), r'\n')}",
         f"LOCATION:{event_data['location'].replace(chr(10), ' ')}",
         "STATUS:CONFIRMED",
         "BEGIN:VALARM",
@@ -99,7 +103,7 @@ def generate_ics_invite(event_data):
         "END:VALARM",
         "END:VEVENT",
         "END:VCALENDAR"
-    ]
+    ])
     return "\r\n".join(lines)
 
 def process_bloch_party_email(uid, sender_email, dry_run=False):
@@ -176,6 +180,86 @@ def process_bloch_party_email(uid, sender_email, dry_run=False):
 
     return event_data
 
+def process_sharing_sack_email(uid, sender_email, dry_run=False):
+    """
+    Processes Dailey's email requesting a weekly recurring calendar reminder for Nellie's sharing sack on Tuesdays.
+    """
+    event_data = {
+        "id": "mbma-sharing-sack",
+        "title": "MBMA: Sharing Sack (Every Tuesday)",
+        "start": "2026-09-15T08:00:00",
+        "end": "2026-09-15T08:30:00",
+        "recurrence": "RRULE:FREQ=WEEKLY;BYDAY=TU",
+        "location": "Mission Bay Montessori Academy, 2640 Soderblom Ave, San Diego, CA 92122",
+        "description": "Weekly reminder for Nellie's Sharing Sack (Sharing Day) at MBMA Children's House K-2 (Ms. Graciela Berumen).\n\nEvery Tuesday morning — remember to pack Nellie's item in her backpack/sharing sack before morning drop-off!",
+        "sequence": 0
+    }
+
+    ics_content = generate_ics_invite(event_data)
+    subject = "🎒 MBMA: Sharing Sack (Every Tuesday)"
+
+    html_body = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #2D3748; line-height: 1.5;">
+      <h2 style="color: #2B6CB0; margin-bottom: 6px;">🎒 MBMA: Sharing Sack (Every Tuesday)</h2>
+      <p style="font-size: 14px; color: #718096; margin-top: 0;">Added to Family Calendar via Leo (LDK Ops)</p>
+      <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 16px 0;">
+      
+      <div style="background: #EDF2F7; padding: 14px 18px; border-radius: 8px; margin-bottom: 16px;">
+        <p style="margin: 4px 0;"><strong>🗓️ Schedule:</strong> Every Tuesday (Starting Tuesday, September 15, 2026)</p>
+        <p style="margin: 4px 0;"><strong>⏰ Time:</strong> 8:00 AM – 8:30 AM (Drop-off window)</p>
+        <p style="margin: 4px 0;"><strong>📍 Location:</strong> Mission Bay Montessori Academy (Children's House K-2)</p>
+        <p style="margin: 4px 0;"><strong>🔔 Alert:</strong> 15 minutes before (7:45 AM)</p>
+        <p style="margin: 4px 0;"><strong>🎒 Details:</strong> Remember to pack Nellie's item in her sharing sack / backpack before morning drop-off!</p>
+      </div>
+
+      <p style="font-size: 14px;">
+        A recurring Google Calendar invitation has been attached and automatically added to your calendars.
+      </p>
+    </div>
+    """
+
+    reply_text = (
+        "Hi Dailey & Lauren,\n\n"
+        "I've added the recurring calendar reminder to the Family Calendar:\n\n"
+        "🎒 MBMA: Sharing Sack (Every Tuesday)\n"
+        "🗓️ Schedule: Every Tuesday, starting September 15, 2026\n"
+        "⏰ Time: 8:00 AM – 8:30 AM (15-minute alert at 7:45 AM)\n"
+        "📍 Location: Mission Bay Montessori Academy (Children's House K-2)\n"
+        "🎒 Details: Reminder to pack Nellie's item in her sharing sack before morning drop-off.\n\n"
+        "Calendar invitations have been dispatched to both of your inboxes!\n\n"
+        "Best,\n"
+        "Leo (LDK Ops)"
+    )
+
+    if dry_run:
+        print(f"[Dry Run] Would send calendar invite for MBMA Sharing Sack to: {FAMILY_CALENDAR_RECIPIENTS}")
+        print(f"[Dry Run] Would send confirmation reply to: {sender_email}")
+        return event_data
+
+    # 1. Send calendar invitation to Lauren & Dailey
+    print(f"📧 Dispatching MBMA Sharing Sack calendar invite to Lauren & Dailey...")
+    send_email(
+        subject=subject,
+        body=html_body,
+        recipients=FAMILY_CALENDAR_RECIPIENTS,
+        from_account="leo",
+        is_html=True,
+        ics_content=ics_content,
+        ics_filename="mbma_sharing_sack.ics"
+    )
+
+    # 2. Reply to original sender confirming action taken
+    print(f"📧 Sending confirmation reply to original sender ({sender_email})...")
+    send_email(
+        subject="Re: Can you remind us via calendar invite that sharing sat at school is every week on Tuesday?",
+        body=reply_text,
+        recipients=[sender_email],
+        from_account="leo",
+        is_html=False
+    )
+
+    return event_data
+
 def check_leo_inbox(dry_run=False):
     """
     Connects to leo@ldk-international.com and checks for new emails from authorized senders.
@@ -189,20 +273,17 @@ def check_leo_inbox(dry_run=False):
     state = load_monitor_state()
     processed = state.setdefault("processed_uids", {})
 
-    print(f"📬 Checking {leo['email']} inbox...")
+    print(f"📬 Checking {leo['email']} inbox ([Gmail]/All Mail)...")
     mail = imaplib.IMAP4_SSL("imap.gmail.com")
     mail.login(leo["email"], leo["password"])
-    # First check INBOX, and if empty, fallback to [Gmail]/All Mail to ensure coverage
-    mail.select("INBOX", readonly=False)
+    
+    # Check "[Gmail]/All Mail" for persistent, account-wide UIDs across folders
+    target_folder = "[Gmail]/All Mail"
+    mail.select(f'"{target_folder}"', readonly=False)
     status, data = mail.uid("search", None, "ALL")
-    target_folder = "INBOX"
-    if status != "OK" or not data[0]:
-        mail.select('"[Gmail]/All Mail"', readonly=False)
-        status, data = mail.uid("search", None, "ALL")
-        target_folder = "[Gmail]/All Mail"
 
     if status != "OK" or not data[0]:
-        print("No messages found in INBOX or All Mail.")
+        print(f"No messages found in {target_folder}.")
         mail.logout()
         return
 
@@ -221,6 +302,7 @@ def check_leo_inbox(dry_run=False):
             continue
 
         msg = email.message_from_bytes(msg_data[0][1])
+        msg_id = msg.get("Message-ID", "").strip()
         from_raw = msg.get("From", "")
         _, sender_email = parseaddr(from_raw)
         sender_email = sender_email.lower().strip()
@@ -279,7 +361,11 @@ def check_leo_inbox(dry_run=False):
             "calendar" in combined_text
             or "add this" in combined_text
             or "event" in combined_text
+            or "remind" in combined_text
             or "bloch" in combined_text
+            or "sharing" in combined_text
+            or "sack" in combined_text
+            or "sat" in combined_text
             or has_image
             or has_pdf
         )
@@ -291,6 +377,20 @@ def check_leo_inbox(dry_run=False):
                 processed[uid_str] = {
                     "sender": sender_email,
                     "subject": subj,
+                    "message_id": msg_id,
+                    "status": "actioned_calendar_invite",
+                    "event": event_data,
+                    "attachments": saved_attachments,
+                    "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
+                }
+                state.setdefault("events", {})[event_data["id"]] = event_data
+            elif "sharing" in combined_text or "sack" in combined_text or "sat" in combined_text:
+                print("🎯 Detected MBMA Sharing Sack request!")
+                event_data = process_sharing_sack_email(uid_str, sender_email, dry_run=dry_run)
+                processed[uid_str] = {
+                    "sender": sender_email,
+                    "subject": subj,
+                    "message_id": msg_id,
                     "status": "actioned_calendar_invite",
                     "event": event_data,
                     "attachments": saved_attachments,
@@ -302,6 +402,7 @@ def check_leo_inbox(dry_run=False):
                 processed[uid_str] = {
                     "sender": sender_email,
                     "subject": subj,
+                    "message_id": msg_id,
                     "status": "action_required",
                     "attachments": saved_attachments,
                     "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -310,6 +411,7 @@ def check_leo_inbox(dry_run=False):
             processed[uid_str] = {
                 "sender": sender_email,
                 "subject": subj,
+                "message_id": msg_id,
                 "status": "logged_non_calendar",
                 "attachments": saved_attachments,
                 "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
