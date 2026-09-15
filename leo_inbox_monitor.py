@@ -240,15 +240,27 @@ def check_leo_inbox(dry_run=False):
         print(f"\n🌟 Authorized message from {sender_email}: '{subj}' (UID {uid_str})")
         actionable_count += 1
 
-        # Save any attachments to output/attachments
+        # 1. Walk message to extract body and save any attachments
         saved_attachments = []
         has_image = False
+        has_pdf = False
+        body_text_parts = []
+
         for part in msg.walk():
             ctype = part.get_content_type()
             disp = str(part.get("Content-Disposition", ""))
             fname = part.get_filename()
+
             if ctype.startswith("image/"):
                 has_image = True
+            if ctype == "application/pdf":
+                has_pdf = True
+
+            if ctype == "text/plain":
+                p_text = part.get_payload(decode=True)
+                if p_text:
+                    body_text_parts.append(p_text.decode("utf-8", errors="replace"))
+
             if fname or "attachment" in disp or ctype.startswith("image/") or ctype == "application/pdf":
                 file_name = fname or f"att_{len(saved_attachments)}.bin"
                 payload = part.get_payload(decode=True)
@@ -259,22 +271,39 @@ def check_leo_inbox(dry_run=False):
                     saved_attachments.append(str(att_path))
                     print(f"📎 Saved attachment: {att_path.name} ({len(payload)} bytes)")
 
-            if "bloch" in subj.lower() or has_image or "add this" in subj.lower():
-                print("🎯 Detected Bloch St Party / calendar add request!")
+        full_body = "\n".join(body_text_parts).lower()
+        combined_text = f"{subj.lower()} {full_body}"
+
+        # 2. Determine if message is an event / calendar add request
+        is_calendar_request = (
+            "calendar" in combined_text
+            or "add this" in combined_text
+            or "event" in combined_text
+            or "bloch" in combined_text
+            or has_image
+            or has_pdf
+        )
+
+        if is_calendar_request:
+            if "bloch" in combined_text:
+                print("🎯 Detected Bloch St Party request!")
                 event_data = process_bloch_party_email(uid_str, sender_email, dry_run=dry_run)
                 processed[uid_str] = {
                     "sender": sender_email,
                     "subject": subj,
                     "status": "actioned_calendar_invite",
                     "event": event_data,
+                    "attachments": saved_attachments,
                     "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
                 }
                 state.setdefault("events", {})[event_data["id"]] = event_data
             else:
+                print(f"📌 Event or calendar request received with attachments: {saved_attachments}")
                 processed[uid_str] = {
                     "sender": sender_email,
                     "subject": subj,
-                    "status": "logged",
+                    "status": "action_required",
+                    "attachments": saved_attachments,
                     "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
                 }
         else:
@@ -282,6 +311,7 @@ def check_leo_inbox(dry_run=False):
                 "sender": sender_email,
                 "subject": subj,
                 "status": "logged_non_calendar",
+                "attachments": saved_attachments,
                 "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
 
