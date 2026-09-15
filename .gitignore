@@ -4,3 +4,9 @@ venv/
 __pycache__/
 .vscode/
 *.log
+.chrome-tmp/
+output/
+.config/
+.rmapi
+bin/
+logs/

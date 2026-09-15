@@ -60,12 +60,13 @@ def load_credentials():
 
     return creds
 
-DEFAULT_RECIPIENTS = ["ldobashi@gmail.com", "dailey.kluck@gmail.com"]
+DEFAULT_RECIPIENTS = ["lmdobashi@gmail.com", "dailey.kluck@gmail.com"]
 
-def send_email(subject, body, recipients=None, from_account="leo", is_html=False):
+def send_email(subject, body, recipients=None, from_account="leo", is_html=False, ics_content=None, ics_filename="invite.ics", ics_method="REQUEST"):
     """
     Sends an email to specified recipients using configured SMTP credentials.
     Default recipients: ['ldobashi@gmail.com', 'dailey.kluck@gmail.com']
+    Supports native iCalendar invite delivery (default method=REQUEST, or CANCEL) when ics_content is provided.
     """
     if recipients is None:
         recipients = DEFAULT_RECIPIENTS
@@ -81,13 +82,38 @@ def send_email(subject, body, recipients=None, from_account="leo", is_html=False
     if not sender_pwd:
         raise ValueError(f"No password found for account {from_account} in .env or himalaya config.")
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"{sender_name} <{sender_email}>"
-    msg["To"] = ", ".join(recipients)
+    if ics_content:
+        from email.mime.base import MIMEBase
+        from email import encoders
 
-    subtype = "html" if is_html else "plain"
-    msg.attach(MIMEText(body, subtype, "utf-8"))
+        msg = MIMEMultipart("mixed")
+        msg["Subject"] = subject
+        msg["From"] = f"{sender_name} <{sender_email}>"
+        msg["To"] = ", ".join(recipients)
+
+        alt_part = MIMEMultipart("alternative")
+        alt_part.attach(MIMEText(body if not is_html else "This email contains an event invitation. Please open in an email client that supports iCalendar.", "plain", "utf-8"))
+        if is_html:
+            alt_part.attach(MIMEText(body, "html", "utf-8"))
+
+        cal_part = MIMEText(ics_content, f"calendar; method={ics_method}; charset=UTF-8")
+        cal_part.add_header("Content-Disposition", f'inline; filename="{ics_filename}"')
+        alt_part.attach(cal_part)
+        msg.attach(alt_part)
+
+        att_part = MIMEBase("text", "calendar", method=ics_method, name=ics_filename)
+        att_part.set_payload(ics_content.encode("utf-8"))
+        encoders.encode_base64(att_part)
+        att_part.add_header("Content-Disposition", f'attachment; filename="{ics_filename}"')
+        msg.attach(att_part)
+    else:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{sender_name} <{sender_email}>"
+        msg["To"] = ", ".join(recipients)
+
+        subtype = "html" if is_html else "plain"
+        msg.attach(MIMEText(body, subtype, "utf-8"))
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
@@ -105,7 +131,7 @@ def send_email(subject, body, recipients=None, from_account="leo", is_html=False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Send emails via LDK Ops SMTP")
-    parser.add_argument("--to", help="Comma-separated recipients", default="ldobashi@gmail.com,dailey.kluck@gmail.com")
+    parser.add_argument("--to", help="Comma-separated recipients", default="lmdobashi@gmail.com,dailey.kluck@gmail.com")
     parser.add_argument("--subject", required=True, help="Email subject")
     parser.add_argument("--body", required=True, help="Email body")
     parser.add_argument("--from-account", choices=["leo", "dailey_ldk", "dailey_personal"], default="leo")

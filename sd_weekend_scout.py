@@ -55,7 +55,7 @@ def generate_ics(events, organizer="leo@ldk-international.com"):
             f"DESCRIPTION:{ev['description']}",
             f"LOCATION:{ev['location']}",
             f"ORGANIZER;CN=Leo:mailto:{organizer}",
-            "ATTENDEE;ROLE=REQ-PARTICIPANT;CN=Lauren Dobashi:mailto:ldobashi@gmail.com",
+            "ATTENDEE;ROLE=REQ-PARTICIPANT;CN=Lauren Dobashi:mailto:lmdobashi@gmail.com",
             "ATTENDEE;ROLE=REQ-PARTICIPANT;CN=Dailey Kluck:mailto:dailey.kluck@gmail.com",
             "STATUS:CONFIRMED",
             "END:VEVENT"
@@ -187,7 +187,7 @@ def run_weekend_scout(send=True):
         success = send_email(
             subject=subject,
             body=html_body,
-            recipients=["ldobashi@gmail.com", "dailey.kluck@gmail.com"],
+            recipients=["lmdobashi@gmail.com", "dailey.kluck@gmail.com"],
             from_account="leo",
             is_html=True
         )
