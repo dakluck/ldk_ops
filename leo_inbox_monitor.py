@@ -192,25 +192,32 @@ def check_leo_inbox(dry_run=False):
     print(f"📬 Checking {leo['email']} inbox...")
     mail = imaplib.IMAP4_SSL("imap.gmail.com")
     mail.login(leo["email"], leo["password"])
+    # First check INBOX, and if empty, fallback to [Gmail]/All Mail to ensure coverage
     mail.select("INBOX", readonly=False)
+    status, data = mail.uid("search", None, "ALL")
+    target_folder = "INBOX"
+    if status != "OK" or not data[0]:
+        mail.select('"[Gmail]/All Mail"', readonly=False)
+        status, data = mail.uid("search", None, "ALL")
+        target_folder = "[Gmail]/All Mail"
 
-    status, data = mail.search(None, "ALL")
-    if status != 'OK' or not data[0]:
-        print("No messages found.")
+    if status != "OK" or not data[0]:
+        print("No messages found in INBOX or All Mail.")
         mail.logout()
         return
 
     uids = data[0].split()
-    print(f"Found {len(uids)} total messages in Leo's inbox.")
+    print(f"Found {len(uids)} total messages in {target_folder}.")
 
     actionable_count = 0
-    for u in uids:
+    # Process the most recent messages (up to 50)
+    for u in uids[-50:]:
         uid_str = u.decode()
         if uid_str in processed:
             continue
 
-        typ, msg_data = mail.fetch(u, '(RFC822)')
-        if typ != 'OK' or not msg_data or not msg_data[0]:
+        typ, msg_data = mail.uid("fetch", u, "(RFC822)")
+        if typ != "OK" or not msg_data or not msg_data[0]:
             continue
 
         msg = email.message_from_bytes(msg_data[0][1])
@@ -233,15 +240,24 @@ def check_leo_inbox(dry_run=False):
         print(f"\n🌟 Authorized message from {sender_email}: '{subj}' (UID {uid_str})")
         actionable_count += 1
 
-        # Check for calendar request with photo/image or text
-        # Specifically handle UID 23 or emails asking to add to calendar
-        if "calendar" in subj.lower() or "add" in subj.lower() or "event" in subj.lower():
-            # Check attachments
-            has_image = False
-            for part in msg.walk():
-                if part.get_content_type().startswith("image/"):
-                    has_image = True
-                    break
+        # Save any attachments to output/attachments
+        saved_attachments = []
+        has_image = False
+        for part in msg.walk():
+            ctype = part.get_content_type()
+            disp = str(part.get("Content-Disposition", ""))
+            fname = part.get_filename()
+            if ctype.startswith("image/"):
+                has_image = True
+            if fname or "attachment" in disp or ctype.startswith("image/") or ctype == "application/pdf":
+                file_name = fname or f"att_{len(saved_attachments)}.bin"
+                payload = part.get_payload(decode=True)
+                if payload:
+                    att_path = OUTPUT_DIR / "attachments" / f"uid_{uid_str}_{file_name}"
+                    att_path.parent.mkdir(parents=True, exist_ok=True)
+                    att_path.write_bytes(payload)
+                    saved_attachments.append(str(att_path))
+                    print(f"📎 Saved attachment: {att_path.name} ({len(payload)} bytes)")
 
             if "bloch" in subj.lower() or has_image or "add this" in subj.lower():
                 print("🎯 Detected Bloch St Party / calendar add request!")
