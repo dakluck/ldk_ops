@@ -10,3 +10,5 @@ output/
 .rmapi
 bin/
 logs/
+certs/
+*.pem

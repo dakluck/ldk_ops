@@ -3,7 +3,7 @@ name: sd-weekend-scout
 description: >-
   Searches, curates, and emails hyper-local weekend kid-friendly and toddler activities in San Diego
   tailored specifically for the family's daughter (DOB: 10/6/2023). Includes direct 1-click Google Calendar
-  integration links. Dispatches to ldobashi@gmail.com and dailey.kluck@gmail.com every Friday at 8:00 PM.
+  integration links. Dispatches to lmdobashi@gmail.com and dailey.kluck@gmail.com every Friday at 8:00 PM.
 ---
 
 # San Diego Weekend Kid-Friendly Activity Scout
@@ -12,7 +12,7 @@ This skill curates weekend family events and toddler-appropriate activities in S
 
 ## Target Profile & Preferences
 - **Child's Birthday:** October 6, 2023 (Toddler / Preschool age)
-- **Recipients:** `ldobashi@gmail.com`, `dailey.kluck@gmail.com`
+- **Recipients:** `lmdobashi@gmail.com`, `dailey.kluck@gmail.com`
 - **Sender:** `leo@ldk-international.com`
 - **Schedule:** Recurring weekly on **Friday evenings at 8:00 PM** (`0 20 * * 5`)
 - **Key Categories:**

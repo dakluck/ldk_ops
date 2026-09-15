@@ -230,7 +230,7 @@ def generate_ics_invite(ev, method="REQUEST"):
     s_dt = datetime.datetime.fromisoformat(ev["start"])
     e_dt = datetime.datetime.fromisoformat(ev["end"])
     fmt = "%Y%m%dT%H%M%S"
-    uid = f"mbma-{ev['id']}@ldk-international.com"
+    uid = f"mbma-v2-{ev['id']}@ldk-international.com"
     now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     seq = ev.get("sequence", 0)
     status = "CANCELLED" if method == "CANCEL" else ev.get("status", "CONFIRMED")
@@ -346,7 +346,7 @@ def export_combined_ics(events):
         s_dt = datetime.datetime.fromisoformat(ev["start"])
         e_dt = datetime.datetime.fromisoformat(ev["end"])
         fmt = "%Y%m%dT%H%M%S"
-        uid = f"mbma-{ev['id']}@ldk-international.com"
+        uid = f"mbma-v2-{ev['id']}@ldk-international.com"
         lines.extend([
             "BEGIN:VEVENT",
             f"UID:{uid}",

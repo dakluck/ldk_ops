@@ -65,7 +65,7 @@ DEFAULT_RECIPIENTS = ["lmdobashi@gmail.com", "dailey.kluck@gmail.com"]
 def send_email(subject, body, recipients=None, from_account="leo", is_html=False, ics_content=None, ics_filename="invite.ics", ics_method="REQUEST"):
     """
     Sends an email to specified recipients using configured SMTP credentials.
-    Default recipients: ['ldobashi@gmail.com', 'dailey.kluck@gmail.com']
+    Default recipients: ['lmdobashi@gmail.com', 'dailey.kluck@gmail.com']
     Supports native iCalendar invite delivery (default method=REQUEST, or CANCEL) when ics_content is provided.
     """
     if recipients is None:
