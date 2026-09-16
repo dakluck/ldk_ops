@@ -36,7 +36,7 @@ All recurring and autonomous background operations in **LDK Ops** are executed v
 
 | Task Name | Cron Schedule | Target Script / Flow | Description |
 | :--- | :--- | :--- | :--- |
-| **Leo Inbox Monitor** | `*/15 * * * *` (Every 15 min) | `leo_inbox_monitor.py` | Monitors `leo@ldk-international.com` for incoming family requests, flyer attachments, and school forms. Automatically parses dates/times, dispatches calendar invites, and replies with confirmation. |
+| **Leo Inbox Monitor** | `0 8,20 * * *` (Twice Daily 8 AM & 8 PM) | `leo_inbox_monitor.py` | Monitors `leo@ldk-international.com` for incoming family requests, flyer attachments, and school forms. Automatically parses dates/times, dispatches calendar invites, replies with confirmation, and sweeps INBOX to maintain Inbox Zero. |
 | **MBMA School Calendar Sync** | `0 7 * * *` (Daily 7:00 AM) | `mbma_calendar_sync.py` | Scans `dailey.kluck@gmail.com` for MBMA newsletters & notices. Updates state in `.mbma_events_state.json` and sends RFC 5545 calendar invites to Dailey & Lauren. |
 | **Daily Folio Worksheet** | `0 6 * * *` (Daily 6:00 AM) | `daily_worksheet.py --upload` | Renders bespoke 1404x1872 vector e-ink daily organizer with live San Diego weather & schedule, pushing to reMarkable 2 `/Daily/`. |
 | **SD Weekend Scout** | `0 20 * * 5` (Friday 8:00 PM) | `sd_weekend_scout.py` | Curates 3 hyper-local toddler activities in San Diego tailored for daughter (born 10/6/2023), with 1-click Google Calendar links sent to `lmdobashi@gmail.com` and `dailey.kluck@gmail.com`. |

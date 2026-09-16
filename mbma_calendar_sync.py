@@ -395,13 +395,14 @@ def _get_email_body(msg):
             body = payload.decode("utf-8", errors="replace")
     return body
 
-def scan_recent_emails(state, dry_run=False, days=14):
+def scan_recent_emails(state, dry_run=False, days=14, apply_label=True, archive=False):
     """
     Connects to IMAP to check recent messages from MBMA domains:
       - @mbmapg.org (Parent Group)
       - @mbmaclass.com / @mbmacademy.com (Administration & Teachers)
       - @online.procaresoftware.com (Classroom chats & updates)
     Compares against existing state ledger and detects updates or newly announced dates.
+    Applies the 'School/MBMA' Gmail label to all processed school communications.
     """
     print("🔍 Scanning recent emails for MBMA communications...")
     creds = load_credentials()
@@ -413,10 +414,16 @@ def scan_recent_emails(state, dry_run=False, days=14):
     try:
         mail = imaplib.IMAP4_SSL("imap.gmail.com")
         mail.login(acc["email"], acc["password"])
-        mail.select('"[Gmail]/All Mail"', readonly=True)
+        mail.select('"[Gmail]/All Mail"', readonly=False)
     except Exception as e:
         print(f"⚠️ IMAP login failed during scan: {e}")
         return False
+
+    if apply_label and not dry_run:
+        try:
+            mail.create('"School/MBMA"')
+        except Exception:
+            pass
 
     target_domains = [
         "mbmapg.org",
@@ -455,18 +462,39 @@ def scan_recent_emails(state, dry_run=False, days=14):
     print(f"📬 Found {len(sorted_uids)} MBMA messages across target domains in the last {days} days.")
 
     found_messages = []
+    labeled_count = 0
+    archived_count = 0
+
     for u in sorted_uids:
-        typ, data = mail.uid("fetch", u, "(RFC822)")
+        typ, data = mail.uid("fetch", u, "(RFC822.HEADER)")
         if typ != "OK" or not data:
             continue
         msg = email.message_from_bytes(data[0][1])
         sender = _decode_mime(msg.get("From"))
-        # Filter out Leo's own automated dispatches
+        # Filter out Leo's own automated dispatches immediately without downloading body
         if ORGANIZER in sender:
             continue
+
         subj = _decode_mime(msg.get("Subject"))
         dt = msg.get("Date")
-        body = _get_email_body(msg)
+
+        # Now fetch full body for confirmed school messages
+        typ_body, body_data = mail.uid("fetch", u, "(RFC822)")
+        body = ""
+        if typ_body == "OK" and body_data:
+            full_msg = email.message_from_bytes(body_data[0][1])
+            body = _get_email_body(full_msg)
+
+        # Apply School/MBMA label
+        if apply_label and not dry_run:
+            mail.uid("store", u, "+X-GM-LABELS", '("School/MBMA")')
+            labeled_count += 1
+
+        # Optionally archive from INBOX
+        if archive and not dry_run:
+            mail.uid("store", u, "-X-GM-LABELS", '("\\\\Inbox")')
+            archived_count += 1
+
         found_messages.append({
             "uid": u.decode(),
             "from": sender,
@@ -477,7 +505,13 @@ def scan_recent_emails(state, dry_run=False, days=14):
 
     print(f"📋 Verified {len(found_messages)} unique inbound school communications:")
     for m in found_messages:
-        print(f"  • [{m['date']}] {m['from']} -> \"{m['subject']}\" (UID: {m['uid']})")
+        label_note = ' [🏷️ School/MBMA]' if apply_label and not dry_run else ''
+        print(f"  • [{m['date']}] {m['from']} -> \"{m['subject']}\" (UID: {m['uid']}){label_note}")
+
+    if labeled_count > 0:
+        print(f"🏷️ Successfully attached 'School/MBMA' label to {labeled_count} messages.")
+    if archived_count > 0:
+        print(f"📦 Successfully archived {archived_count} messages from INBOX.")
 
     state["last_scan"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     if not dry_run:
@@ -491,8 +525,10 @@ def main():
     parser.add_argument("--send-all", action="store_true", help="Send calendar invites for all events")
     parser.add_argument("--send-event", help="Send invite for a specific event ID")
     parser.add_argument("--scan", action="store_true", help="Scan recent emails for school event updates")
+    parser.add_argument("--no-label", action="store_true", help="Skip applying 'School/MBMA' Gmail label")
+    parser.add_argument("--archive", action="store_true", help="Archive scanned emails from INBOX to All Mail")
     parser.add_argument("--export-ics", action="store_true", help="Export combined .ics file")
-    parser.add_argument("--dry-run", action="store_true", help="Simulate without sending emails")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without sending emails or modifying labels")
     args = parser.parse_args()
 
     state = load_state()
@@ -524,7 +560,12 @@ def main():
             save_state(state)
 
     if args.scan:
-        scan_recent_emails(state, dry_run=args.dry_run)
+        scan_recent_emails(
+            state,
+            dry_run=args.dry_run,
+            apply_label=not args.no_label,
+            archive=args.archive
+        )
 
 if __name__ == "__main__":
     main()

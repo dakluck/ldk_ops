@@ -260,7 +260,74 @@ def process_sharing_sack_email(uid, sender_email, dry_run=False):
 
     return event_data
 
-def check_leo_inbox(dry_run=False):
+def clean_leo_inbox(mail, processed_uids=None, dry_run=False):
+    """
+    Cleans leo@ldk-international.com INBOX to maintain Inbox Zero:
+    1. Archives actioned family emails from INBOX to All Mail.
+    2. Trashes marketing, junk, promo, and mailer-daemon bounce clutter.
+    3. Archives non-critical notifications so INBOX stays clean.
+    """
+    print("\n🧹 Checking Leo INBOX for cleanup (Inbox Zero sweep)...")
+    mail.select("INBOX", readonly=False)
+    status, data = mail.uid("search", None, "ALL")
+    if status != "OK" or not data[0]:
+        print("✨ INBOX is already at Inbox Zero (0 messages).")
+        return 0
+
+    inbox_uids = data[0].split()
+    print(f"📥 Found {len(inbox_uids)} message(s) in INBOX to evaluate.")
+
+    cleaned_count = 0
+    archived_count = 0
+
+    for u in inbox_uids:
+        typ, msg_data = mail.uid("fetch", u, "(RFC822.HEADER)")
+        if typ != "OK" or not msg_data:
+            continue
+
+        msg = email.message_from_bytes(msg_data[0][1])
+        from_raw = msg.get("From", "")
+        _, sender = parseaddr(from_raw)
+        sender = sender.lower().strip()
+        subj = decode_mime(msg.get("Subject", ""))
+        list_unsub = msg.get("List-Unsubscribe", "")
+
+        # 1. Family member emails
+        if sender in AUTHORIZED_SENDERS:
+            print(f"  📦 Archiving actioned family email from INBOX: '{subj}' ({sender})")
+            if not dry_run:
+                mail.uid("store", u, "+FLAGS", "(\\Seen)")
+                mail.uid("store", u, "-X-GM-LABELS", "(\\Inbox)")
+            archived_count += 1
+        else:
+            # 2. Unauthorized senders: classify noise vs notice
+            is_bounce = "mailer-daemon" in sender or "failure" in subj.lower()
+            is_marketing = (
+                "apple_ads" in sender
+                or bool(list_unsub)
+                or any(k in subj.lower() for k in ["newsletter", "deal", "offer", "invited to join", "sale", "promo", "digest", "shop"])
+            )
+
+            if is_bounce or is_marketing:
+                print(f"  🗑️ Trashing clutter: '{subj}' ({sender})")
+                if not dry_run:
+                    mail.uid("copy", u, "[Gmail]/Trash")
+                    mail.uid("store", u, "+FLAGS", "(\\Deleted)")
+                cleaned_count += 1
+            else:
+                print(f"  📦 Archiving account notice: '{subj}' ({sender})")
+                if not dry_run:
+                    mail.uid("store", u, "+FLAGS", "(\\Seen)")
+                    mail.uid("store", u, "-X-GM-LABELS", "(\\Inbox)")
+                archived_count += 1
+
+    if not dry_run and cleaned_count > 0:
+        mail.expunge()
+
+    print(f"✨ INBOX cleanup complete: {cleaned_count} trashed, {archived_count} archived.")
+    return cleaned_count + archived_count
+
+def check_leo_inbox(dry_run=False, clean=True):
     """
     Connects to leo@ldk-international.com and checks for new emails from authorized senders.
     """
@@ -417,6 +484,9 @@ def check_leo_inbox(dry_run=False):
                 "processed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
             }
 
+    if clean:
+        clean_leo_inbox(mail, processed_uids=processed, dry_run=dry_run)
+
     if not dry_run:
         save_monitor_state(state)
         print(f"💾 Updated monitor state: {len(processed)} messages tracked.")
@@ -428,9 +498,10 @@ def main():
     parser = argparse.ArgumentParser(description="Leo Inbox Monitor & Autonomous Family Ops Agent")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without sending emails")
     parser.add_argument("--check-once", action="store_true", help="Run a single check of Leo's inbox")
+    parser.add_argument("--no-clean", action="store_true", help="Skip cleaning INBOX to Inbox Zero")
     args = parser.parse_args()
 
-    check_leo_inbox(dry_run=args.dry_run)
+    check_leo_inbox(dry_run=args.dry_run, clean=not args.no_clean)
 
 if __name__ == "__main__":
     main()

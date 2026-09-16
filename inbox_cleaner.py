@@ -42,9 +42,18 @@ MARKETING_PATTERNS = [
     "summer collection", "new arrivals", "weekend deals", "flash sale", "referral"
 ]
 
+FAMILY_SENDERS = [
+    "dailey.kluck@gmail.com", "dailey.kluck@fivetran.com",
+    "lmdobashi@gmail.com", "ldobashi@sdsu.edu",
+    "leo@ldk-international.com", "dailey@ldk-international.com"
+]
+
 def classify_message(sender, subject, list_unsub):
     s_lower = sender.lower()
     sub_lower = subject.lower()
+    
+    if any(fs in s_lower for fs in FAMILY_SENDERS):
+        return "KEEP"
     
     is_transactional = any(k in sub_lower for k in PROTECTED_SUBJECT_KEYWORDS)
     is_protected_sender = any(d in s_lower for d in PROTECTED_DOMAINS)
@@ -169,7 +178,8 @@ if __name__ == '__main__':
     creds = load_credentials()
     accounts = [
         ('Dailey LDK', creds['dailey_ldk']['email'], creds['dailey_ldk']['password']),
-        ('Dailey Personal', creds['dailey_personal']['email'], creds['dailey_personal']['password'])
+        ('Dailey Personal', creds['dailey_personal']['email'], creds['dailey_personal']['password']),
+        ('Leo', creds['leo']['email'], creds['leo']['password'])
     ]
     for name, addr, pwd in accounts:
         process_inbox(name, addr, pwd, dry_run=dry_run)
