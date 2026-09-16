@@ -363,10 +363,45 @@ def export_combined_ics(events):
     COMBINED_ICS_FILE.write_text("\r\n".join(lines))
     print(f"✅ Saved combined ICS file to: {COMBINED_ICS_FILE}")
 
-def scan_recent_emails(state, dry_run=False):
+def _decode_mime(header_val):
+    if not header_val:
+        return ""
+    parts = decode_header(header_val)
+    res = []
+    for part, enc in parts:
+        if isinstance(part, bytes):
+            res.append(part.decode(enc or "utf-8", errors="replace"))
+        else:
+            res.append(str(part))
+    return "".join(res)
+
+def _get_email_body(msg):
+    body = ""
+    if msg.is_multipart():
+        for part in msg.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get("Content-Disposition"))
+            if ctype == "text/plain" and "attachment" not in cdispo:
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body += payload.decode("utf-8", errors="replace") + "\n"
+            elif ctype == "text/html" and not body and "attachment" not in cdispo:
+                payload = part.get_payload(decode=True)
+                if payload:
+                    body += payload.decode("utf-8", errors="replace") + "\n"
+    else:
+        payload = msg.get_payload(decode=True)
+        if payload:
+            body = payload.decode("utf-8", errors="replace")
+    return body
+
+def scan_recent_emails(state, dry_run=False, days=14):
     """
-    Connects to IMAP to check recent messages (past 7 days) from MBMA domains.
-    Detects changes, updates, or newly announced dates.
+    Connects to IMAP to check recent messages from MBMA domains:
+      - @mbmapg.org (Parent Group)
+      - @mbmaclass.com / @mbmacademy.com (Administration & Teachers)
+      - @online.procaresoftware.com (Classroom chats & updates)
+    Compares against existing state ledger and detects updates or newly announced dates.
     """
     print("🔍 Scanning recent emails for MBMA communications...")
     creds = load_credentials()
@@ -383,21 +418,67 @@ def scan_recent_emails(state, dry_run=False):
         print(f"⚠️ IMAP login failed during scan: {e}")
         return False
 
-    # Search for MBMA emails in last 7 days
-    since_date = (datetime.date.today() - datetime.timedelta(days=7)).strftime("%d-%b-%Y")
-    query = f'(SINCE "{since_date}" OR (FROM "mbma") (SUBJECT "mbma"))'
-    
-    typ, data = mail.uid('search', None, query)
-    if typ != 'OK' or not data or not data[0]:
-        print("ℹ️ No new MBMA emails found in the last 7 days.")
+    target_domains = [
+        "mbmapg.org",
+        "mbmaclass.com",
+        "mbmacademy.com",
+        "online.procaresoftware.com"
+    ]
+
+    since_date = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
+    uids = set()
+
+    for domain in target_domains:
+        query = f'(SINCE "{since_date}" FROM "{domain}")'
+        typ, data = mail.uid("search", None, query)
+        if typ == "OK" and data and data[0]:
+            for u in data[0].split():
+                uids.add(u)
+
+    # Also search by subject keywords
+    for kw in ["MBMA", "Montessori"]:
+        query = f'(SINCE "{since_date}" SUBJECT "{kw}")'
+        typ, data = mail.uid("search", None, query)
+        if typ == "OK" and data and data[0]:
+            for u in data[0].split():
+                uids.add(u)
+
+    if not uids:
+        print(f"ℹ️ No new MBMA communications found in the last {days} days.")
+        state["last_scan"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        if not dry_run:
+            save_state(state)
         mail.logout()
         return True
 
-    uids = data[0].split()
-    print(f"Found {len(uids)} MBMA messages to inspect.")
+    sorted_uids = sorted(list(uids), key=lambda x: int(x))
+    print(f"📬 Found {len(sorted_uids)} MBMA messages across target domains in the last {days} days.")
 
-    # In a full run, parses body for date mentions, updates state.
-    # For now, record last scan timestamp
+    found_messages = []
+    for u in sorted_uids:
+        typ, data = mail.uid("fetch", u, "(RFC822)")
+        if typ != "OK" or not data:
+            continue
+        msg = email.message_from_bytes(data[0][1])
+        sender = _decode_mime(msg.get("From"))
+        # Filter out Leo's own automated dispatches
+        if ORGANIZER in sender:
+            continue
+        subj = _decode_mime(msg.get("Subject"))
+        dt = msg.get("Date")
+        body = _get_email_body(msg)
+        found_messages.append({
+            "uid": u.decode(),
+            "from": sender,
+            "subject": subj,
+            "date": dt,
+            "body": body
+        })
+
+    print(f"📋 Verified {len(found_messages)} unique inbound school communications:")
+    for m in found_messages:
+        print(f"  • [{m['date']}] {m['from']} -> \"{m['subject']}\" (UID: {m['uid']})")
+
     state["last_scan"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
     if not dry_run:
         save_state(state)
