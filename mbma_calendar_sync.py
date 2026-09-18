@@ -429,7 +429,8 @@ def scan_recent_emails(state, dry_run=False, days=14, apply_label=True, archive=
         "mbmapg.org",
         "mbmaclass.com",
         "mbmacademy.com",
-        "online.procaresoftware.com"
+        "online.procaresoftware.com",
+        "procaremessagingservice.com"
     ]
 
     since_date = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%d-%b-%Y")

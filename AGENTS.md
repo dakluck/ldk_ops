@@ -62,6 +62,7 @@ Agents operating in `ldk_ops` have access to the following native skills in [`.a
 | **`trash-schedule`** | SD Get It Done portal sync, biweekly recycling tracking, & Google Family Calendar auto-push. | `trash_schedule.py`, `calendar_oauth_helper.py`, `cron_trash_schedule.sh` |
 | **`mbma-calendar-sync`** | Daily sync of MBMA school communications & automated Google Calendar invite updates. | `mbma_calendar_sync.py`, `cron_mbma_sync.sh` |
 | **`leo-inbox-monitor`** | 24/7 monitoring of `leo@ldk-international.com` to action family calendar requests & flyer attachments. | `leo_inbox_monitor.py`, `cron_leo_inbox_monitor.sh` |
+| **`google-drive`** | Full programmatic access, folder organization, and file sync for `dailey@ldk-international.com`. | `drive_manager.py`, `drive_oauth_helper.py` |
 
 ---
 
