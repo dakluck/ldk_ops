@@ -23,7 +23,8 @@ def clean_header(header_val):
 PROTECTED_DOMAINS = [
     "ldk-international.com", "mercury.com", "usaa.com", "chase.com", "wellsfargo.com",
     "stripe.com", "cloudflare.com", "vercel.com", "github.com", "sdsu.edu",
-    "mbmacademy.com", "bkscpa.com", "zenbusiness.com"
+    "mbmacademy.com", "bkscpa.com", "zenbusiness.com", "google.com", "apple.com",
+    "gitguardian.com", "irs.gov", "sos.ca.gov", "ftb.ca.gov"
 ]
 
 PROTECTED_SUBJECT_KEYWORDS = [
@@ -31,7 +32,11 @@ PROTECTED_SUBJECT_KEYWORDS = [
     "confirmation", "ticket", "flight", "reservation", "payment", "statement",
     "security alert", "verification", "verify", "pin", "login", "password reset",
     "tax", "w-2", "1099", "p360", "coaching", "bank account", "deposit", "transfer",
-    "payout", "dispute", "bill", "charge", "refund", "wire"
+    "payout", "dispute", "bill", "charge", "refund", "wire", "suspension", "suspended",
+    "at risk", "action required", "action advised", "notice", "alert", "security",
+    "warning", "critical", "storage limit", "api key", "exposed", "breach", "incident",
+    "billing", "balance", "app review", "rejected", "approved", "compliance", "policy",
+    "urgent", "quota", "limit exceeded"
 ]
 
 MARKETING_PATTERNS = [
@@ -39,7 +44,8 @@ MARKETING_PATTERNS = [
     "exclusive offer", "daily digest", "newsletter", "weekly update", "special offer",
     "clearance", "promo", "shop now", "free shipping on orders", "save up to",
     "word of the day", "word smarts", "word daily", "word genius", "trending",
-    "summer collection", "new arrivals", "weekend deals", "flash sale", "referral"
+    "summer collection", "new arrivals", "weekend deals", "flash sale", "referral",
+    "ai coach", "simplifying payroll", "see fei-fei li", "standout sessions"
 ]
 
 FAMILY_SENDERS = [
@@ -52,36 +58,40 @@ def classify_message(sender, subject, list_unsub):
     s_lower = sender.lower()
     sub_lower = subject.lower()
     
+    # 1. Always protect family senders
     if any(fs in s_lower for fs in FAMILY_SENDERS):
         return "KEEP"
     
     is_transactional = any(k in sub_lower for k in PROTECTED_SUBJECT_KEYWORDS)
     is_protected_sender = any(d in s_lower for d in PROTECTED_DOMAINS)
+    is_explicit_marketing = any(p in sub_lower for p in MARKETING_PATTERNS)
     
-    is_marketing = False
-    if any(p in sub_lower for p in MARKETING_PATTERNS):
-        is_marketing = True
-    if list_unsub and not is_transactional:
-        is_marketing = True
+    # 2. If it's transactional / critical alert, ALWAYS KEEP
+    if is_transactional:
+        return "KEEP"
         
-    junk_senders = [
+    # 3. Known junk / retail marketing senders
+    retail_junk_senders = [
         "wordsmarts", "worddaily", "wordgenius", "bandsintown", "etsy",
         "pelagic", "offerup", "huel", "roark", "tyr.com", "pelican.com",
         "newwestknifeworks", "complyfoam", "repfitness", "discover.offerup",
-        "no-reply@", "noreply@", "newsletters@", "marketing@", "promotions@",
-        "e.nike.com", "e.underarmour.com", "marketing.patagonia.com"
+        "e.nike.com", "e.underarmour.com", "marketing.patagonia.com",
+        "tiktok", "newsletters@", "promotions@"
     ]
-    if any(j in s_lower for j in junk_senders) and not is_transactional:
-        is_marketing = True
-
-    if is_transactional or (is_protected_sender and not is_marketing):
-        return "KEEP"
-    elif is_marketing:
+    if any(j in s_lower for j in retail_junk_senders):
         return "CLEAN"
-    else:
-        if list_unsub:
+        
+    # 4. Protected infrastructure/business senders
+    if is_protected_sender:
+        if is_explicit_marketing:
             return "CLEAN"
         return "KEEP"
+
+    # 5. Default rules for unknown external senders
+    if is_explicit_marketing or list_unsub:
+        return "CLEAN"
+        
+    return "KEEP"
 
 def process_inbox(account_name, email_addr, password, dry_run=True):
     print("=======================================================")
@@ -174,12 +184,22 @@ def process_inbox(account_name, email_addr, password, dry_run=True):
     mail.logout()
 
 if __name__ == '__main__':
-    dry_run = '--apply' not in sys.argv
+    import argparse
+    parser = argparse.ArgumentParser(description="LDK Ops Inbox Triage & Cleaner")
+    parser.add_argument("--apply", action="store_true", help="Apply cleanup actions (moves noise to Trash)")
+    parser.add_argument("--account", choices=["dailey_ldk", "dailey_personal", "leo", "all"], default="all", help="Target specific account")
+    args = parser.parse_args()
+
+    dry_run = not args.apply
     creds = load_credentials()
-    accounts = [
-        ('Dailey LDK', creds['dailey_ldk']['email'], creds['dailey_ldk']['password']),
-        ('Dailey Personal', creds['dailey_personal']['email'], creds['dailey_personal']['password']),
-        ('Leo', creds['leo']['email'], creds['leo']['password'])
+    
+    all_accounts = [
+        ('dailey_ldk', 'Dailey LDK', creds['dailey_ldk']['email'], creds['dailey_ldk']['password']),
+        ('dailey_personal', 'Dailey Personal', creds['dailey_personal']['email'], creds['dailey_personal']['password']),
+        ('leo', 'Leo', creds['leo']['email'], creds['leo']['password'])
     ]
-    for name, addr, pwd in accounts:
+    
+    for key, name, addr, pwd in all_accounts:
+        if args.account != 'all' and args.account != key:
+            continue
         process_inbox(name, addr, pwd, dry_run=dry_run)
