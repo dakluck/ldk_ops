@@ -199,7 +199,7 @@ def process_inbox(account_name, email_addr, password, dry_run=True):
 
     mail.logout()
 
-def get_target_label(sender, subject):
+def get_target_label_corporate(sender, subject):
     s = sender.lower()
     sub = subject.lower()
     
@@ -221,6 +221,117 @@ def get_target_label(sender, subject):
         return 'Payments'
     if any(k in s for k in ['itch.io', 'gitguardian', 'eia.gov']):
         return 'Software'
+        
+    return 'Non-Critical/Archived'
+
+
+def get_target_label_personal(sender, subject):
+    s = sender.lower()
+    sub = subject.lower()
+    
+    # Family
+    if 'lmdobashi@' in s or 'lauren dobashi' in s:
+        return 'Family/Lauren Dobashi'
+    if 'nancy.kluck@' in s or 'nancy kluck' in s:
+        return 'Family/Nancy Kluck'
+    if 'sara lederhandler' in s or 'slederhandler@' in s:
+        return 'Family/Sara Lederhandler'
+    if any(k in s for k in ['dailey.kluck@gmail.com', 'dailey.kluck@fivetran.com']):
+        return 'Family/Dailey Kluck'
+    if 'leo@ldk-international.com' in s:
+        return 'Non-Critical/Archived'
+        
+    # School & Childcare
+    if any(k in s for k in ['mbm', 'mbmacademy', 'evite', 'procare']):
+        return 'School/MBMA'
+        
+    # Financial & Banking
+    if 'usaa' in s:
+        return 'USAA'
+    if 'wellsfargo' in s or 'wells fargo' in s:
+        return 'Wells Fargo'
+    if 'chase' in s:
+        return 'Chase'
+    if 'vanguard' in s:
+        return 'Vanguard'
+    if 'fidelity' in s or 'your benefits center' in s:
+        return 'Fidelity'
+    if 'monarch' in s:
+        return 'Monarch Money'
+    if 'robinhood' in s:
+        return 'Robinhood'
+    if 'elevations' in s:
+        return 'Elevations Credit Union'
+    if 'paypal' in s:
+        return 'Paypal'
+    if 'venmo' in s:
+        return 'Venmo'
+    if 'alpaca' in s:
+        return 'Tradestation'
+        
+    # Health & Medical & Pets
+    if 'kaiser' in s or 'kp.org' in s:
+        return 'Kaiser'
+    if 'cigna' in s:
+        return 'Cigna'
+    if 'delta dental' in s or 'deltadental' in s or 'dental' in s:
+        return 'Delta Dental'
+    if 'west coast animal hospital' in s or 'rapportmail3' in s:
+        return 'West Coast Animal Hospital'
+    if 'embrace' in s:
+        return 'Embrace'
+        
+    # Government, Auto, Travel
+    if 'dmv' in s or 'etags' in s:
+        return 'California/DMV'
+    if 'fastrak' in s:
+        return 'FasTrak'
+    if 'docupet' in s or 'humane society' in s:
+        return 'Brands/DocuPet'
+    if 'turo' in s:
+        return 'Turo'
+    if 'porsche' in s:
+        return 'Porsche San Diego'
+    if 'marriott' in s or 'courtyard' in s:
+        return 'Marriott'
+    if 'disney' in s:
+        return 'Disney+'
+        
+    # Tech, Hardware & Brands
+    if any(k in s for k in ['google.com', 'googlestore', 'googlepixel', 'googleplay']):
+        return 'Google'
+    if any(k in s for k in ['apple.com', 'itunes', 'testflight', 'app store connect']):
+        return 'Brands/Apple'
+    if 'ubiquiti' in s or 'ui.com' in s:
+        return 'Brands/Ubiquiti'
+    if 'remarkable' in s:
+        return 'reMarkable'
+    if 'openai' in s or 'chatgpt' in s:
+        return 'OpenAI'
+    if 'fivetran' in s:
+        return 'Fivetran'
+    if 'cu.edu' in s or 'forever buffs' in s:
+        return 'CU Email'
+    if 'crkd' in s:
+        return 'Branks/CRKD'
+    if 'amazon' in s:
+        return 'Amazon'
+    if 'ups.com' in s or 'ups ' in s:
+        return 'UPS'
+    if 'fedex' in s:
+        return 'FedEx'
+    if 'cloudflare' in s:
+        return 'Cloudflare'
+    if 'spotify' in s:
+        return 'Spotify'
+    if 'microsoft' in s:
+        return 'Microsoft'
+    if 'nalpak' in s or 'pelican' in s:
+        return 'Brands/Pelican'
+    if 'waterhog' in s:
+        return 'Brands/Front Runner Outfitters'
+    if 'patagonia' in s:
+        return 'Brands/Patagonia'
         
     return 'Non-Critical/Archived'
 
@@ -248,6 +359,9 @@ def organize_inbox(account_name, email_addr, password, dry_run=True):
     total = len(uids)
     print(f"Total messages in INBOX: {total}")
     
+    is_personal = "gmail.com" in email_addr.lower()
+    label_fn = get_target_label_personal if is_personal else get_target_label_corporate
+    
     label_batches = {}
     chunk_size = 50
     for i in range(0, total, chunk_size):
@@ -268,7 +382,7 @@ def organize_inbox(account_name, email_addr, password, dry_run=True):
                 sender = clean_header(msg.get('From', ''))
                 subject = clean_header(msg.get('Subject', ''))
                 
-                target_label = get_target_label(sender, subject)
+                target_label = label_fn(sender, subject)
                 if uid_val:
                     label_batches.setdefault(target_label, []).append(uid_val)
                     
@@ -276,12 +390,12 @@ def organize_inbox(account_name, email_addr, password, dry_run=True):
         
     print("\nPlanned Categorization:")
     for lbl, b_uids in sorted(label_batches.items(), key=lambda x: -len(x[1])):
-        print(f"  📁 {lbl:<30}: {len(b_uids)} messages")
+        print(f"  📁 {lbl:<32}: {len(b_uids)} messages")
         
     if not dry_run:
         print("\nExecuting label assignment and archiving out of INBOX...")
         for lbl, b_uids in label_batches.items():
-            print(f"  Tagging {len(b_uids)} messages with '{lbl}'...")
+            print(f"  Tagging and archiving {len(b_uids)} messages with '{lbl}'...")
             batch_size = 50
             for b in range(0, len(b_uids), batch_size):
                 sub_batch = b_uids[b:b+batch_size]
@@ -292,7 +406,7 @@ def organize_inbox(account_name, email_addr, password, dry_run=True):
                 mail.uid('STORE', uid_set, '+FLAGS', '(\\Deleted)')
         print("  Expunging INBOX to finalize archive...")
         mail.expunge()
-        print("✅ All messages successfully labeled and archived out of INBOX!")
+        print("✅ All messages successfully labeled and archived out of INBOX (Inbox Zero)!")
 
     mail.logout()
 
