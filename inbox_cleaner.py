@@ -22,9 +22,12 @@ def clean_header(header_val):
 
 PROTECTED_DOMAINS = [
     "ldk-international.com", "mercury.com", "usaa.com", "chase.com", "wellsfargo.com",
-    "stripe.com", "cloudflare.com", "vercel.com", "github.com", "sdsu.edu",
-    "mbmacademy.com", "bkscpa.com", "zenbusiness.com", "google.com", "apple.com",
-    "gitguardian.com", "irs.gov", "sos.ca.gov", "ftb.ca.gov"
+    "americanexpress.com", "fidelity.com", "vanguard.com", "elevationscu.com",
+    "monarch.com", "monarchmoney.com", "stripe.com", "cloudflare.com", "vercel.com",
+    "github.com", "sdsu.edu", "cu.edu", "mbmacademy.com", "bkscpa.com", "zenbusiness.com",
+    "google.com", "apple.com", "gitguardian.com", "irs.gov", "sos.ca.gov", "ftb.ca.gov",
+    "etags.com", "dmv.ca.gov", "kp.org", "cigna.com", "deltadental.com",
+    "embracepetinsurance.com", "ui.com"
 ]
 
 PROTECTED_SUBJECT_KEYWORDS = [
@@ -34,18 +37,22 @@ PROTECTED_SUBJECT_KEYWORDS = [
     "tax", "w-2", "1099", "p360", "coaching", "bank account", "deposit", "transfer",
     "payout", "dispute", "bill", "charge", "refund", "wire", "suspension", "suspended",
     "at risk", "action required", "action advised", "notice", "alert", "security",
-    "warning", "critical", "storage limit", "api key", "exposed", "breach", "incident",
-    "billing", "balance", "app review", "rejected", "approved", "compliance", "policy",
-    "urgent", "quota", "limit exceeded"
+    "warning", "critical", "storage limit", "storage pool", "data protection", "api key",
+    "exposed", "breach", "incident", "billing", "balance", "credit balance", "credit score",
+    "app review", "rejected", "approved", "compliance", "policy", "urgent", "quota",
+    "limit exceeded", "registration", "insurance", "dental", "medical", "appointment",
+    "benefit", "clarification", "rsvp", "evite"
 ]
 
 MARKETING_PATTERNS = [
     "unsubscribe", "sale", "deal", "discount", "off your next", "limited time",
     "exclusive offer", "daily digest", "newsletter", "weekly update", "special offer",
-    "clearance", "promo", "shop now", "free shipping on orders", "save up to",
-    "word of the day", "word smarts", "word daily", "word genius", "trending",
-    "summer collection", "new arrivals", "weekend deals", "flash sale", "referral",
-    "ai coach", "simplifying payroll", "see fei-fei li", "standout sessions"
+    "clearance", "promo", "shop now", "free shipping on orders", "free shipping",
+    "shipping is on us", "save up to", "word of the day", "word smarts", "word daily",
+    "word genius", "trending", "summer collection", "new arrivals", "weekend deals",
+    "flash sale", "referral", "ai coach", "simplifying payroll", "see fei-fei li",
+    "standout sessions", "how did it go?", "tell us about your", "review your purchase",
+    "review your order"
 ]
 
 FAMILY_SENDERS = [
@@ -62,32 +69,41 @@ def classify_message(sender, subject, list_unsub):
     if any(fs in s_lower for fs in FAMILY_SENDERS):
         return "KEEP"
     
-    is_transactional = any(k in sub_lower for k in PROTECTED_SUBJECT_KEYWORDS)
     is_protected_sender = any(d in s_lower for d in PROTECTED_DOMAINS)
     is_explicit_marketing = any(p in sub_lower for p in MARKETING_PATTERNS)
     
-    # 2. If it's transactional / critical alert, ALWAYS KEEP
-    if is_transactional:
+    is_transactional = any(k in sub_lower for k in PROTECTED_SUBJECT_KEYWORDS)
+    if "free shipping" in sub_lower or "shipping is on us" in sub_lower:
+        is_transactional = False
+        
+    # If transactional and NOT explicit marketing, keep
+    if is_transactional and not is_explicit_marketing:
         return "KEEP"
         
-    # 3. Known junk / retail marketing senders
+    # Known junk / retail marketing senders
     retail_junk_senders = [
         "wordsmarts", "worddaily", "wordgenius", "bandsintown", "etsy",
         "pelagic", "offerup", "huel", "roark", "tyr.com", "pelican.com",
         "newwestknifeworks", "complyfoam", "repfitness", "discover.offerup",
         "e.nike.com", "e.underarmour.com", "marketing.patagonia.com",
-        "tiktok", "newsletters@", "promotions@"
+        "tiktok", "newsletters@", "promotions@", "jeffrandalldrumming",
+        "hudsongracesf.com", "taggrading.com", "zwilling.com", "chompshop.com",
+        "resy.com", "kingarthurbaking.com", "gatlindidier.com", "loox.io",
+        "porsche.us", "thekeyrewards", "serviceprotectionadvantage"
     ]
     if any(j in s_lower for j in retail_junk_senders):
         return "CLEAN"
         
-    # 4. Protected infrastructure/business senders
+    # Protected infrastructure/business senders
     if is_protected_sender:
         if is_explicit_marketing:
             return "CLEAN"
         return "KEEP"
+        
+    if is_transactional:
+        return "KEEP"
 
-    # 5. Default rules for unknown external senders
+    # Default rules for unknown external senders
     if is_explicit_marketing or list_unsub:
         return "CLEAN"
         
