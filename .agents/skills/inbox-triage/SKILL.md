@@ -74,3 +74,14 @@ for key in ['dailey_ldk', 'dailey_personal']:
     print(f\"{acc['email']}: Total={total}, Unread={unread}\")
 "
 ```
+
+### 4. Bulk Archive Promotions Purge
+To purge historical promotional clutter from `[Gmail]/All Mail` (older than 30 days) while strictly preserving receipts, orders, tracking, statements, and protected accounts:
+
+```bash
+# Dry Run Preview:
+python3 /home/dailey/Development/ldk_ops/inbox_cleaner.py --account dailey_personal --clean-promotions
+
+# Live Execution:
+python3 /home/dailey/Development/ldk_ops/inbox_cleaner.py --account dailey_personal --clean-promotions --apply
+```

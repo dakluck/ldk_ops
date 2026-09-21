@@ -27,7 +27,10 @@ PROTECTED_DOMAINS = [
     "github.com", "sdsu.edu", "cu.edu", "mbmacademy.com", "bkscpa.com", "zenbusiness.com",
     "google.com", "apple.com", "gitguardian.com", "irs.gov", "sos.ca.gov", "ftb.ca.gov",
     "etags.com", "dmv.ca.gov", "kp.org", "cigna.com", "deltadental.com",
-    "embracepetinsurance.com", "ui.com"
+    "embracepetinsurance.com", "ui.com", "southwest.com", "delta.com", "united.com",
+    "alaskaair.com", "marriott.com", "hilton.com", "hyatt.com", "airbnb.com", "turo.com",
+    "sdge.com", "att.com", "verizon.com", "t-mobile.com", "costco.com", "robinhood.com",
+    "paypal.com", "venmo.com"
 ]
 
 PROTECTED_SUBJECT_KEYWORDS = [
@@ -41,7 +44,9 @@ PROTECTED_SUBJECT_KEYWORDS = [
     "exposed", "breach", "incident", "billing", "balance", "credit balance", "credit score",
     "app review", "rejected", "approved", "compliance", "policy", "urgent", "quota",
     "limit exceeded", "registration", "insurance", "dental", "medical", "appointment",
-    "benefit", "clarification", "rsvp", "evite"
+    "benefit", "clarification", "rsvp", "evite", "itinerary", "boarding pass", "check-in",
+    "hotel", "car rental", "mortgage", "lease", "escrow", "deed", "contract", "warranty",
+    "return", "claim", "prescription", "patient", "doctor"
 ]
 
 MARKETING_PATTERNS = [
@@ -411,16 +416,172 @@ def organize_inbox(account_name, email_addr, password, dry_run=True):
     mail.logout()
 
 
+def clean_archived_promotions(account_name, email_addr, password, dry_run=True, target_year=None, older_than="30d", batch_limit=None):
+    print("=======================================================")
+    print(f"  Archived Promotions Purge: {account_name} ({email_addr})")
+    print(f"  Mode: {'DRY RUN (Preview Only)' if dry_run else 'LIVE EXECUTION (Moving to Trash)'}")
+    if target_year:
+        print(f"  Target Year: {target_year}")
+    print(f"  Threshold: older_than:{older_than}")
+    if batch_limit:
+        print(f"  Limit: {batch_limit} messages max")
+    print("=======================================================")
+
+    if not password:
+        print(f"Skipping {email_addr}: No password found.")
+        return
+
+    mail = imaplib.IMAP4_SSL("imap.gmail.com")
+    mail.login(email_addr, password)
+    mail.select('"[Gmail]/All Mail"')
+
+    years = [target_year] if target_year else [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]
+
+    search_exclusions = (
+        "-{subject:order subject:receipt subject:invoice subject:confirmation "
+        "subject:shipping subject:tracking subject:statement subject:tax "
+        "subject:ticket subject:reservation subject:flight subject:booking "
+        "subject:security subject:password subject:verify subject:pin "
+        "subject:payout subject:deposit subject:bill subject:refund "
+        "subject:w-2 subject:1099 subject:benefits subject:medical "
+        "subject:insurance subject:appointment subject:itinerary}"
+    )
+
+    grand_total_found = 0
+    grand_total_cleaned = 0
+    grand_total_preserved = 0
+
+    samples_cleaned = []
+    samples_preserved = []
+
+    for yr in years:
+        if batch_limit and grand_total_cleaned >= batch_limit:
+            print(f"\nBatch limit of {batch_limit} reached. Stopping.")
+            break
+
+        if yr < 2026:
+            query = f'category:promotions -in:inbox after:{yr-1}/12/31 before:{yr+1}/01/01 {search_exclusions}'
+        else:
+            query = f'category:promotions -in:inbox after:2025/12/31 older_than:{older_than} {search_exclusions}'
+
+        print(f"\n--- Processing Year {yr} ---")
+        status, data = mail.uid('search', None, 'X-GM-RAW', f'"{query}"')
+        if status != "OK" or not data[0]:
+            print(f"  No promotional candidates found for {yr}.")
+            continue
+
+        uids = data[0].split()
+        total_yr = len(uids)
+        grand_total_found += total_yr
+        print(f"  Found {total_yr} promotional candidate UIDs for {yr}.")
+
+        yr_clean_uids = []
+        yr_preserve_uids = []
+
+        fetch_chunk_size = 500
+        for i in range(0, total_yr, fetch_chunk_size):
+            chunk = uids[i:i+fetch_chunk_size]
+            chunk_str = b','.join(chunk).decode('ascii')
+            status, fetch_data = mail.uid('fetch', chunk_str, '(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)])')
+            if status != 'OK' or not fetch_data:
+                continue
+
+            for item in fetch_data:
+                if isinstance(item, tuple):
+                    header_line = item[0].decode('ascii', errors='ignore')
+                    uid_match = re.search(r'UID\s+(\d+)', header_line)
+                    uid_val = uid_match.group(1).encode('ascii') if uid_match else None
+                    if not uid_val:
+                        continue
+
+                    raw_header = item[1]
+                    msg = email.message_from_bytes(raw_header)
+                    sender = clean_header(msg.get('From', ''))
+                    subject = clean_header(msg.get('Subject', ''))
+                    date_str = msg.get('Date', '')
+
+                    s_lower = sender.lower()
+                    sub_lower = subject.lower()
+
+                    is_family = any(fs in s_lower for fs in FAMILY_SENDERS)
+                    is_protected_domain = any(d in s_lower for d in PROTECTED_DOMAINS)
+                    is_transactional = any(k in sub_lower for k in PROTECTED_SUBJECT_KEYWORDS)
+
+                    if is_family or is_protected_domain or is_transactional:
+                        yr_preserve_uids.append(uid_val)
+                        if len(samples_preserved) < 15:
+                            samples_preserved.append((sender[:35], subject[:50], date_str[:25]))
+                    else:
+                        yr_clean_uids.append(uid_val)
+                        if len(samples_cleaned) < 15:
+                            samples_cleaned.append((sender[:35], subject[:50], date_str[:25]))
+
+            print(f"  Verified {min(i + fetch_chunk_size, total_yr)}/{total_yr} headers in {yr}...", end="\r", flush=True)
+
+        print(f"\n  Year {yr} Summary: {len(yr_clean_uids)} marketing blasts to trash, {len(yr_preserve_uids)} preserved.")
+        grand_total_preserved += len(yr_preserve_uids)
+
+        if not dry_run and yr_clean_uids:
+            if batch_limit:
+                remaining_quota = batch_limit - grand_total_cleaned
+                if remaining_quota < len(yr_clean_uids):
+                    yr_clean_uids = yr_clean_uids[:remaining_quota]
+
+            print(f"  Moving {len(yr_clean_uids)} messages from {yr} to [Gmail]/Trash...")
+            trash_batch_size = 500
+            for b in range(0, len(yr_clean_uids), trash_batch_size):
+                b_uids = yr_clean_uids[b:b+trash_batch_size]
+                uid_set = b','.join(b_uids).decode('ascii')
+                mail.uid('copy', uid_set, '[Gmail]/Trash')
+                mail.uid('store', uid_set, '+FLAGS', r'(\Deleted)')
+                print(f"    Moved {min(b + trash_batch_size, len(yr_clean_uids))}/{len(yr_clean_uids)}...", end="\r", flush=True)
+
+            mail.expunge()
+            print(f"\n  ✅ Successfully trashed and expunged {len(yr_clean_uids)} messages from {yr}.")
+            grand_total_cleaned += len(yr_clean_uids)
+        else:
+            grand_total_cleaned += len(yr_clean_uids)
+
+    print("\n=======================================================")
+    print(f"  OVERALL CLEANUP SUMMARY ({'DRY RUN' if dry_run else 'COMPLETED'})")
+    print(f"  Total Candidates Checked : {grand_total_found}")
+    print(f"  🛡️ Preserved (Safe/Orders): {grand_total_preserved}")
+    print(f"  🧹 Cleaned to Trash       : {grand_total_cleaned}")
+    print("=======================================================")
+
+    print("\nSample Preserved Messages (Receipts/Orders/Protected):")
+    for s, sub, d in samples_preserved:
+        print(f"  [KEEP]  {s:<35} | {sub:<45} | {d}")
+
+    print("\nSample Cleaned Marketing Blasts:")
+    for s, sub, d in samples_cleaned:
+        print(f"  [CLEAN] {s:<35} | {sub:<45} | {d}")
+
+    mail.logout()
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="LDK Ops Inbox Triage & Cleaner")
     parser.add_argument("--apply", action="store_true", help="Apply cleanup actions (moves noise to Trash)")
     parser.add_argument("--organize", action="store_true", help="Organize remaining INBOX messages into custom labels and archive out of INBOX")
-    parser.add_argument("--account", choices=["dailey_ldk", "dailey_personal", "leo", "all"], default="all", help="Target specific account")
+    parser.add_argument("--clean-promotions", action="store_true", help="Purge archived promotional marketing emails from [Gmail]/All Mail")
+    parser.add_argument("--year", type=int, default=None, help="Target specific year for promotions cleanup (e.g. 2018)")
+    parser.add_argument("--older-than", default="30d", help="Older than threshold for promotions cleanup (default: 30d)")
+    parser.add_argument("--limit", type=int, default=None, help="Maximum number of messages to process/trash")
+    parser.add_argument("--account", choices=["dailey_ldk", "dailey_personal", "leo", "all"], default=None, help="Target specific account")
     args = parser.parse_args()
 
     dry_run = not args.apply
     creds = load_credentials()
+    
+    # If cleaning promotions, default account is dailey_personal
+    if args.clean_promotions and not args.account:
+        target_account = "dailey_personal"
+    elif args.account:
+        target_account = args.account
+    else:
+        target_account = "all"
     
     all_accounts = [
         ('dailey_ldk', 'Dailey LDK', creds['dailey_ldk']['email'], creds['dailey_ldk']['password']),
@@ -429,9 +590,12 @@ if __name__ == '__main__':
     ]
     
     for key, name, addr, pwd in all_accounts:
-        if args.account != 'all' and args.account != key:
+        if target_account != 'all' and target_account != key:
             continue
-        if args.organize:
+        if args.clean_promotions:
+            clean_archived_promotions(name, addr, pwd, dry_run=dry_run, target_year=args.year, older_than=args.older_than, batch_limit=args.limit)
+        elif args.organize:
             organize_inbox(name, addr, pwd, dry_run=dry_run)
         else:
             process_inbox(name, addr, pwd, dry_run=dry_run)
+
