@@ -68,7 +68,10 @@ Agents operating in `ldk_ops` have access to the following native skills in [`.a
 
 ## 5. Operational Guardrails & Execution Rules
 
-1. **Strict Secret Hygiene:** NEVER hardcode or commit passwords, API tokens, or service account credentials into Git. All secrets must reside exclusively in `.env` (git-ignored) or local configuration paths (`~/.config/himalaya/`, `~/.config/gcloud/`).
+1. **Strict Secret Hygiene & Cloud Vaulting:**
+   - **Never Git:** NEVER hardcode or commit passwords, API tokens, recovery keys, or credentials into Git. All local secrets must reside exclusively in `.env` (git-ignored) or local configuration paths (`~/.config/himalaya/`, `~/.config/gcloud/`).
+   - **Cloud Source of Truth:** All `.env` secrets and wallet recovery inventories must be mirrored to **GCP Secret Manager** (project: `ldk-international`).
+   - **Sync Workflow:** Use `python3 sync_secrets.py --push` immediately after adding or rotating local secrets, and `python3 sync_secrets.py --pull` when restoring or re-hydrating the environment on a new machine.
 2. **Recipient Email Accuracy:** Always verify family recipients are set to `lmdobashi@gmail.com` and `dailey.kluck@gmail.com`.
 3. **Safety-First Mailbox Triage:** Always safeguard personal correspondence, banking/credit notices, tax documents, and purchase/delivery confirmations during inbox cleanups.
 4. **Age-Appropriate Scouting:** Keep weekend recommendations matched to toddler wake windows (morning / late afternoon) and developmentally engaging for a toddler born in October 2023.
