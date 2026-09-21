@@ -16,22 +16,28 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-TOKEN_FILE = SCRIPT_DIR / ".google_drive_token.json"
+TOKEN_FILES = {
+    "business": SCRIPT_DIR / ".google_drive_token.json",
+    "personal": SCRIPT_DIR / ".google_drive_token_personal.json",
+}
+TOKEN_FILE = TOKEN_FILES["business"]
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
 class GoogleDriveClient:
     """Client for interacting with Google Drive API v3."""
 
-    def __init__(self, token_path: Path = TOKEN_FILE):
-        self.token_path = token_path
+    def __init__(self, account: str = "business", token_path: Optional[Path] = None):
+        self.account = account
+        self.token_path = token_path or TOKEN_FILES.get(account, TOKEN_FILES["business"])
         self.creds = self._load_credentials()
 
     def _load_credentials(self) -> Dict[str, Any]:
         if not self.token_path.exists():
+            account_flag = f" --account {self.account}" if self.account != "business" else ""
             raise FileNotFoundError(
-                f"Google Drive credentials not found at {self.token_path}.\n"
-                f"Please run 'python3 drive_oauth_helper.py' to authorize access."
+                f"Google Drive credentials for '{self.account}' account not found at {self.token_path}.\n"
+                f"Please run 'python3 drive_oauth_helper.py{account_flag}' to authorize access."
             )
         try:
             return json.loads(self.token_path.read_text())
@@ -109,7 +115,7 @@ class GoogleDriveClient:
 
         req = urllib.request.Request(url, data=data, headers=req_headers, method=method)
         try:
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, timeout=45) as resp:
                 raw = resp.read().decode("utf-8")
                 return json.loads(raw) if raw else {}
         except urllib.error.HTTPError as e:
@@ -262,6 +268,7 @@ def print_tree(client: GoogleDriveClient, folder_id: str = "root", indent: int =
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Google Drive Manager for LDK Ops")
+    parser.add_argument("--account", choices=["business", "personal"], default="business", help="Target account (business: dailey@ldk-international.com, personal: dailey.kluck@gmail.com)")
     subparsers = parser.add_subparsers(dest="command")
 
     # list command
@@ -292,7 +299,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        client = GoogleDriveClient()
+        client = GoogleDriveClient(account=args.account)
     except Exception as e:
         print(f"❌ {e}", file=sys.stderr)
         sys.exit(1)

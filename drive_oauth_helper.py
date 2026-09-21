@@ -15,9 +15,13 @@ import socketserver
 import threading
 import argparse
 from pathlib import Path
+from typing import Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-TOKEN_FILE = SCRIPT_DIR / ".google_drive_token.json"
+TOKEN_FILES = {
+    "business": SCRIPT_DIR / ".google_drive_token.json",
+    "personal": SCRIPT_DIR / ".google_drive_token_personal.json",
+}
 
 # LDK International GCP Project OAuth Client
 CLIENT_ID = os.environ.get(
@@ -39,8 +43,15 @@ REDIRECT_PORT = 8085
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}"
 
 
-def get_authorization_url(login_hint="dailey@ldk-international.com") -> str:
+def get_token_path(account: str = "business") -> Path:
+    return TOKEN_FILES.get(account, TOKEN_FILES["business"])
+
+
+def get_authorization_url(account: str = "business", login_hint: Optional[str] = None) -> str:
     """Generates the Google OAuth authorization URL for Google Drive."""
+    if login_hint is None:
+        login_hint = "dailey.kluck@gmail.com" if account == "personal" else "dailey@ldk-international.com"
+
     params = {
         "client_id": CLIENT_ID,
         "redirect_uri": REDIRECT_URI,
@@ -54,7 +65,7 @@ def get_authorization_url(login_hint="dailey@ldk-international.com") -> str:
     return f"{AUTH_URI}?{urllib.parse.urlencode(params)}"
 
 
-def exchange_code(code_or_url: str) -> bool:
+def exchange_code(code_or_url: str, account: str = "business") -> bool:
     """Exchanges an authorization code or redirect URL for refresh & access tokens."""
     code = code_or_url.strip()
     if "code=" in code:
@@ -86,9 +97,10 @@ def exchange_code(code_or_url: str) -> bool:
                 "token_uri": TOKEN_URI,
                 "scopes": SCOPES
             }
-            TOKEN_FILE.write_text(json.dumps(payload, indent=2))
-            os.chmod(TOKEN_FILE, 0o600)
-            print(f"\n✅ Google Drive credentials successfully saved to: {TOKEN_FILE.name}")
+            token_path = get_token_path(account)
+            token_path.write_text(json.dumps(payload, indent=2))
+            os.chmod(token_path, 0o600)
+            print(f"\n✅ Google Drive credentials successfully saved to: {token_path.name}")
             
             # Verify drive access immediately
             verify_drive_access(token_data.get("access_token"))
@@ -165,7 +177,7 @@ class OAuthCallbackHandler(http.server.SimpleHTTPRequestHandler):
         pass  # Suppress default server access logs
 
 
-def run_local_listener(timeout=180):
+def run_local_listener(timeout=600):
     """Runs a temporary local web server to catch the OAuth redirect."""
     server = socketserver.TCPServer(("127.0.0.1", REDIRECT_PORT), OAuthCallbackHandler)
     server.timeout = 1.0
@@ -180,25 +192,29 @@ def run_local_listener(timeout=180):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LDK Ops Google Drive OAuth Helper")
+    parser.add_argument("--account", choices=["business", "personal"], default="business", help="Target account (business: dailey@ldk-international.com, personal: dailey.kluck@gmail.com)")
     parser.add_argument("--code", help="Authorization code or redirected URL from browser")
     parser.add_argument("--no-listen", action="store_true", help="Do not run local server, only print link")
     args = parser.parse_args()
 
     if args.code:
-        exchange_code(args.code)
+        exchange_code(args.code, account=args.account)
     else:
-        auth_url = get_authorization_url()
-        print("\n🔑 Google Drive Authorization Setup for LDK Ops")
-        print("=" * 60)
-        print("1. Open the following URL in your browser while logged into dailey@ldk-international.com:")
+        auth_url = get_authorization_url(account=args.account)
+        expected_email = "dailey.kluck@gmail.com" if args.account == "personal" else "dailey@ldk-international.com"
+        token_target = get_token_path(args.account)
+
+        print(f"\n🔑 Google Drive Authorization Setup for LDK Ops ({args.account.capitalize()} Drive)")
+        print("=" * 65)
+        print(f"1. Open the following URL in your browser while logged into {expected_email}:")
         print(f"\n{auth_url}\n")
-        print("2. Google will display the authorization screen for LDK International.")
-        print("3. When you approve, your browser will redirect to localhost:8085 and finish automatically.")
-        print("   (Or copy the redirected URL / code and run: python3 drive_oauth_helper.py --code '<CODE>')\n")
+        print(f"2. Google will display the authorization screen.")
+        print(f"3. When you approve, your browser will redirect to localhost:{REDIRECT_PORT} and save to {token_target.name}.")
+        print(f"   (Or copy the redirected URL / code and run: python3 drive_oauth_helper.py --account {args.account} --code '<CODE>')\n")
 
         if not args.no_listen:
             code = run_local_listener(timeout=180)
             if code:
-                exchange_code(code)
+                exchange_code(code, account=args.account)
             else:
                 print("⏱️ Listener timed out. You can re-run or pass --code directly.")
