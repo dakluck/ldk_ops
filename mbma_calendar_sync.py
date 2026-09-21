@@ -529,6 +529,7 @@ def main():
     parser.add_argument("--no-label", action="store_true", help="Skip applying 'School/MBMA' Gmail label")
     parser.add_argument("--archive", action="store_true", help="Archive scanned emails from INBOX to All Mail")
     parser.add_argument("--export-ics", action="store_true", help="Export combined .ics file")
+    parser.add_argument("--days", type=int, default=14, help="Days back to scan for emails (default: 14)")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without sending emails or modifying labels")
     args = parser.parse_args()
 
@@ -564,6 +565,7 @@ def main():
         scan_recent_emails(
             state,
             dry_run=args.dry_run,
+            days=args.days,
             apply_label=not args.no_label,
             archive=args.archive
         )

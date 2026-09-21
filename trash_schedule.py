@@ -594,27 +594,31 @@ def main():
 
     sched = get_upcoming_schedule(target_dt)
 
+    executed_action = False
     if args.send_invite:
         send_trash_invite(sched, dry_run=args.dry_run)
-        return
+        executed_action = True
 
     if args.push_calendar:
         push_to_family_calendar(sched, calendar_id=args.calendar_id)
-        return
+        executed_action = True
 
     if args.gcal_link:
         print(generate_gcal_link(sched))
-        return
+        executed_action = True
 
     if args.ics:
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         ics_path = OUTPUT_DIR / "trash_schedule.ics"
         ics_path.write_text(generate_ics_content(sched), encoding="utf-8")
         print(f"✅ Generated ICS calendar file: {ics_path}")
-        return
+        executed_action = True
 
     if args.keep_text:
         print(get_keep_checklist_text(sched))
+        executed_action = True
+
+    if executed_action:
         return
 
     print(f"\n🗑️  LDK Ops Trash Schedule Engine")

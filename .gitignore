@@ -12,3 +12,5 @@ bin/
 logs/
 certs/
 *.pem
+wallets_inventory.md
+.wallets/
