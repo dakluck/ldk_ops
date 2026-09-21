@@ -23,15 +23,20 @@ TOKEN_FILES = {
     "personal": SCRIPT_DIR / ".google_drive_token_personal.json",
 }
 
+def _load_env_secrets():
+    env_file = SCRIPT_DIR / ".env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+_load_env_secrets()
+
 # LDK International GCP Project OAuth Client
-CLIENT_ID = os.environ.get(
-    "GOOGLE_DRIVE_CLIENT_ID",
-    ""
-)
-CLIENT_SECRET = os.environ.get(
-    "GOOGLE_DRIVE_CLIENT_SECRET",
-    ""
-)
+CLIENT_ID = os.environ.get("GOOGLE_DRIVE_CLIENT_ID", "")
+CLIENT_SECRET = os.environ.get("GOOGLE_DRIVE_CLIENT_SECRET", "")
 
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
 TOKEN_URI = "https://oauth2.googleapis.com/token"
