@@ -34,9 +34,19 @@ class MercuryClient:
             raise Exception(f"Request failed: {str(e)}")
 
     def get_accounts(self) -> List[Dict[str, Any]]:
-        """Fetches all accounts for the user."""
+        """Fetches all accounts (checking, savings, and credit) for the user."""
         data = self._request("GET", "accounts")
-        return data.get("accounts", data.get("data", []))
+        accounts = list(data.get("accounts", data.get("data", [])))
+        try:
+            credit_data = self._request("GET", "credit")
+            credit_accounts = credit_data.get("accounts", [])
+            for ca in credit_accounts:
+                ca["type"] = "credit"
+                ca["name"] = f"Mercury IO Credit (••{ca.get('id')[-4:]})"
+                accounts.append(ca)
+        except Exception:
+            pass
+        return accounts
 
     def get_categories(self) -> List[Dict[str, Any]]:
         """Fetches available categories."""
