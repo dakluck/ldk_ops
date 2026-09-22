@@ -56,14 +56,17 @@ class MercuryClient:
     def get_transactions(self, account_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetches transactions, optionally filtered by account_id."""
         if not account_id:
-            accounts = self.get_accounts()
-            all_txs = []
-            for acc in accounts:
-                aid = acc.get("id")
-                if aid:
-                    txs = self.get_transactions(aid)
-                    all_txs.extend(txs)
-            return all_txs
+            # Query global transactions endpoint to capture all historical and active accounts
+            data = self._request("GET", "transactions", params={"limit": 500})
+            txs = data.get("transactions", data.get("data", []))
+            seen = set()
+            deduped = []
+            for t in txs:
+                tid = t.get("id")
+                if tid and tid not in seen:
+                    seen.add(tid)
+                    deduped.append(t)
+            return deduped
             
         endpoint = f"account/{account_id}/transactions"
         data = self._request("GET", endpoint, params={"limit": 500})
