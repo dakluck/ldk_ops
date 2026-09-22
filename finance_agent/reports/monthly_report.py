@@ -307,7 +307,27 @@ def generate_monthly_report():
         for item in capital_items:
             print(f"  {item['date']} | {'Owner Capital / Equity':<28} | {item['desc']:<25} | ${item['amount']:>10,.2f}")
         print()
-    
+
+    # === GCP CLOUD INFRASTRUCTURE ATTRIBUTION (BIGQUERY EXPORT) ===
+    try:
+        from gcp_billing import get_gcp_billing_summary
+        gcp_summary = get_gcp_billing_summary(now)
+        if gcp_summary.get("status") == "success" and gcp_summary.get("total_net_cost", 0) > 0:
+            print("  GCP CLOUD INFRASTRUCTURE ATTRIBUTION (BigQuery Export)")
+            print("  " + "─" * 68)
+            print(f"  Total Correlated GCP Spend: ${gcp_summary['total_net_cost']:,.2f}")
+            print("\n  Spend by Project:")
+            for proj, cost in gcp_summary.get("by_project", {}).items():
+                pct = (cost / gcp_summary['total_net_cost']) * 100 if gcp_summary['total_net_cost'] > 0 else 0
+                print(f"    • {proj:<28} ${cost:>8,.2f} ({pct:>5.1f}%)")
+            print("\n  Top Cloud Services:")
+            for srv, cost in list(gcp_summary.get("by_service", {}).items())[:5]:
+                pct = (cost / gcp_summary['total_net_cost']) * 100 if gcp_summary['total_net_cost'] > 0 else 0
+                print(f"    • {srv:<28} ${cost:>8,.2f} ({pct:>5.1f}%)")
+            print()
+    except Exception:
+        pass
+
     # === ANOMALY DETECTION ===
     print("  ANOMALY DETECTION")
     print("  " + "─" * 68)
