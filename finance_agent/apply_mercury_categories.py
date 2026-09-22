@@ -1,10 +1,26 @@
-
+"""
+Mercury Transaction Categorization Sync (Dry-Run by default).
+Safely suggests or applies categories for uncategorized transactions.
+Defers to existing categories in Mercury Books and strictly excludes failed billing retries.
+Usage:
+  python3 apply_mercury_categories.py          # Dry-run audit (read-only)
+  python3 apply_mercury_categories.py --apply  # Push category updates to Mercury API
+"""
 import os
+import sys
+import argparse
+from pathlib import Path
+
+agent_dir = Path(__file__).resolve().parent
+sys.path.insert(0, str(agent_dir))
+
 from api.mercury_client import MercuryClient
 from core.categorizer import TransactionCategorizer
 
-def apply_categorization():
-    print("🚀 Starting Mercury Transaction Categorization Sync...")
+def apply_categorization(dry_run: bool = True):
+    mode_str = "DRY-RUN (Audit Only)" if dry_run else "LIVE APPLY"
+    print(f"🚀 Starting Mercury Transaction Categorization [{mode_str}]...")
+    
     client = MercuryClient()
     categorizer = TransactionCategorizer()
     
@@ -17,9 +33,11 @@ def apply_categorization():
     
     summary = {
         "total_scanned": 0,
-        "total_updated": 0,
-        "total_skipped": 0,
-        "total_failed": 0,
+        "already_categorized": 0,
+        "failed_retries_skipped": 0,
+        "proposed_updates": 0,
+        "successfully_applied": 0,
+        "failed_updates": 0,
         "high_value_found": []
     }
 
@@ -35,33 +53,36 @@ def apply_categorization():
         
         for tx in transactions:
             tx_id = tx['id']
+            status = tx.get('status')
+            
+            # Skip failed transactions (e.g. failed billing retries)
+            if status == 'failed':
+                summary["failed_retries_skipped"] += 1
+                continue
+
             desc = tx.get('counterpartyName') or tx.get('bankDescription') or "Unknown"
             amount = tx.get('amount', 0)
             
-            # Robust amount check for high-value
             try:
                 abs_amount = abs(float(amount))
             except (TypeError, ValueError):
                 abs_amount = 0
 
-            # Robust category data handling
             category_data = tx.get('categoryData')
-            if not category_data:
-                current_cat_id = None
-                current_cat_name = "None"
-            else:
-                current_cat_id = category_data.get('id')
-                current_cat_name = category_data.get('name', 'None')
+            current_cat_id = category_data.get('id') if category_data else None
+            current_cat_name = category_data.get('name', 'None') if category_data else 'None'
 
-            # 3. Get Proposed Category Name
+            # Defer to Mercury Books: if already categorized, don't overwrite
+            if current_cat_id:
+                summary["already_categorized"] += 1
+                continue
+
+            # Get Proposed Category Name
             proposed_cat_name = categorizer.categorize(desc)
-            
-            # 4. Find the corresponding ID
             proposed_cat_id = name_to_id.get(proposed_cat_name)
 
-            # Check if update is needed
-            if proposed_cat_id and proposed_cat_id != current_cat_id:
-                # Check for high value
+            if proposed_cat_id:
+                summary["proposed_updates"] += 1
                 if abs_amount >= 500:
                     summary["high_value_found"].append({
                         "id": tx_id,
@@ -69,33 +90,42 @@ def apply_categorization():
                         "amount": amount,
                         "proposed": proposed_cat_name
                     })
-                    # We still proceed but we will report it.
-                    # Given the user said "Apply all", we proceed.
 
-                try:
-                    print(f"  🔄 Updating: {desc} ({amount}) | {current_cat_name} ➡️ {proposed_cat_name}")
-                    client.update_transaction(account_id, tx_id, {"categoryId": proposed_cat_id})
-                    summary["total_updated"] += 1
-                except Exception as e:
-                    print(f"  ❌ Failed to update {tx_id}: {e}")
-                    summary["total_failed"] += 1
-            else:
-                summary["total_skipped"] += 1
+                if not dry_run:
+                    try:
+                        print(f"  🔄 Updating: {desc} (${amount}) | {current_cat_name} ➡️ {proposed_cat_name}")
+                        client.update_transaction(account_id, tx_id, {"categoryId": proposed_cat_id})
+                        summary["successfully_applied"] += 1
+                    except Exception as e:
+                        print(f"  ❌ Failed to update {tx_id}: {e}")
+                        summary["failed_updates"] += 1
+                else:
+                    print(f"  🔍 [Dry-Run] Suggest: {desc} (${amount}) ➡️ {proposed_cat_name}")
 
     # Final Summary Report
-    print("\n" + "="*40)
-    print("✅ SYNC COMPLETE")
-    print("="*40)
-    print(f"Total Transactions Scanned: {summary['total_scanned']}")
-    print(f"Successfully Updated:      {summary['total_updated']}")
-    print(f"Skipped (Correct):       {summary['total_skipped']}")
-    print(f"Failed:                   {summary['total_failed']}")
+    print("\n" + "=" * 48)
+    print(f"✅ SYNC SUMMARY [{mode_str}]")
+    print("=" * 48)
+    print(f"Total Transactions Scanned:    {summary['total_scanned']}")
+    print(f"Failed Retries Excluded:       {summary['failed_retries_skipped']}")
+    print(f"Already Categorized in Books:  {summary['already_categorized']}")
+    print(f"Proposed Categorizations:      {summary['proposed_updates']}")
+    if not dry_run:
+        print(f"Successfully Applied:          {summary['successfully_applied']}")
+        print(f"Failed Updates:                {summary['failed_updates']}")
     
     if summary["high_value_found"]:
-        print("\n⚠️  HIGH-VALUE TRANSACTIONS PROCESSED:")
+        print("\n⚠️  HIGH-VALUE TRANSACTIONS PROCESSED (≥ $500):")
         for hv in summary["high_value_found"]:
-            print(f"  - {hv['desc']} ({hv['amount']}) ➡️ {hv['proposed']}")
-    print("="*40)
+            print(f"  • {hv['desc']} (${hv['amount']}) ➡️ {hv['proposed']}")
+    print("=" * 48)
+    if dry_run and summary['proposed_updates'] > 0:
+        print("💡 Note: Run with `--apply` to commit these suggestions to Mercury.")
+
 
 if __name__ == "__main__":
-    apply_categorization()
+    parser = argparse.ArgumentParser(description="Mercury Transaction Categorization Sync")
+    parser.add_argument("--apply", action="store_true", help="Apply updates to Mercury API (defaults to dry-run)")
+    args = parser.parse_args()
+    
+    apply_categorization(dry_run=not args.apply)
