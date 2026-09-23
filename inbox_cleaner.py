@@ -251,6 +251,8 @@ def get_target_label_personal(sender, subject):
         return 'School/MBMA'
         
     # Financial & Banking
+    if 'american express' in s or 'americanexpress' in s or 'amex' in s:
+        return 'American Express'
     if 'usaa' in s:
         return 'USAA'
     if 'wellsfargo' in s or 'wells fargo' in s:
@@ -281,12 +283,14 @@ def get_target_label_personal(sender, subject):
         return 'Cigna'
     if 'delta dental' in s or 'deltadental' in s or 'dental' in s:
         return 'Delta Dental'
-    if 'west coast animal hospital' in s or 'rapportmail3' in s:
+    if any(k in s for k in ['west coast animal hospital', 'governor animal clinic', 'rapportmail3']):
         return 'West Coast Animal Hospital'
     if 'embrace' in s:
         return 'Embrace'
         
-    # Government, Auto, Travel
+    # Government, Auto, Travel, Utilities
+    if 'sdge' in s:
+        return 'SDGE'
     if 'dmv' in s or 'etags' in s:
         return 'California/DMV'
     if 'fastrak' in s:
@@ -307,6 +311,22 @@ def get_target_label_personal(sender, subject):
         return 'Google'
     if any(k in s for k in ['apple.com', 'itunes', 'testflight', 'app store connect']):
         return 'Brands/Apple'
+    if 'rei' in s:
+        return 'Brands/REI'
+    if 'nintendo' in s:
+        return 'Brands/Nintendo'
+    if 'discord' in s:
+        return 'Discord'
+    if 'facebook' in s:
+        return 'Facebook'
+    if 'docusign' in s:
+        return 'Docusign'
+    if 'rachio' in s:
+        return 'Brands/Rachio'
+    if 'nuphy' in s:
+        return 'Brands/NuPhy'
+    if 'hudson grace' in s:
+        return 'Brands/Hudson Grace'
     if 'ubiquiti' in s or 'ui.com' in s:
         return 'Brands/Ubiquiti'
     if 'remarkable' in s:
