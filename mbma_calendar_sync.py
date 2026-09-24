@@ -206,16 +206,6 @@ INITIAL_EVENTS = [
         "sequence": 0
     },
     {
-        "id": "emergency-comfort-kit-20260925",
-        "title": "🎒 MBMA: Emergency Comfort Kit Due (Nellie)",
-        "start": "2026-09-25T08:00:00",
-        "end": "2026-09-25T08:30:00",
-        "location": MBMA_LOCATION,
-        "description": "Emergency Comfort Kit due for Nellie in Ms. Graciela's classroom (K-2 / Children's House).\n\n📦 Kit Checklist:\n• 1-gallon Ziploc bag clearly labeled with Nellie Kluck's name\n• Family photo\n• Reassuring / comforting note from parents\n• Complete change of clothes (shirt, pants, underwear, socks)\n\nTurn in at morning drop-off on Friday, Sept 25.",
-        "status": "CONFIRMED",
-        "sequence": 0
-    },
-    {
         "id": "ms-graciela-birthday",
         "title": "🎂 MBMA: Ms. Graciela's Birthday",
         "start": "2027-08-06T08:00:00",
