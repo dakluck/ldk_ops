@@ -8,6 +8,7 @@ school communications for new, updated, or cancelled dates.
 
 import os
 import sys
+import re
 import json
 import email
 import imaplib
@@ -63,7 +64,11 @@ INITIAL_EVENTS = [
         "location": MBMA_LOCATION,
         "description": "Deadline to submit student Halloween Art Contest posters on the official form. (Extended to Tuesday, September 29, 2026 by MBMA Parent Group).",
         "status": "CONFIRMED",
-        "sequence": 1
+        "sequence": 1,
+        "is_baseline": False,
+        "source_uid": "338418",
+        "source_sender": "secretarypg@mbmapg.org",
+        "source_quote": "Halloween Art Contest deadline has been extended to Tuesday, September 29, 2026"
     },
     {
         "id": "directory-deadline-20261009",
@@ -214,7 +219,11 @@ INITIAL_EVENTS = [
         "description": "Ms. Graciela Berumen's Birthday (Nellie's Teacher at MBMA - Children's House / K-2).\n\n🎁 Ms. Graciela's Favorites Profile:\n• Stores: Macy’s, Nordstrom, Target\n• Gift Cards: Starbucks, Amazon\n• Favorite Colors: Black, red, pink, turquoise\n• Favorite Flowers: Orchids\n• Favorite Restaurants: P.F. Chang’s, California Pizza Kitchen, Lorna’s\n• Gifts to Avoid: Creams, lotions, and candles\n\nRoom Parent Coordinator: Megan Shaver (megan.a.shaver@gmail.com)\nVenmo: @Megan-Shaver-MBMA (last 4 digits 8841)\nZelle: megan.a.shaver@gmail.com",
         "status": "CONFIRMED",
         "rrule": "FREQ=YEARLY",
-        "sequence": 0
+        "sequence": 0,
+        "is_baseline": False,
+        "source_uid": "337807",
+        "source_sender": "megan.a.shaver@gmail.com",
+        "source_quote": "Birthday: August 6th"
     }
 ]
 
@@ -297,6 +306,14 @@ def generate_gcal_link(ev):
     return f"https://calendar.google.com/calendar/render?{urllib.parse.urlencode(params)}"
 
 def send_event_invite(ev, method="REQUEST", dry_run=False):
+    # Enforce provenance verification
+    if method == "REQUEST":
+        try:
+            verify_event_provenance(ev)
+        except Exception as e:
+            print(f"❌ Refusing to dispatch unverified event: {e}", file=sys.stderr)
+            return False
+
     gcal_url = generate_gcal_link(ev)
     ics_content = generate_ics_invite(ev, method=method)
     
@@ -418,6 +435,119 @@ def _get_email_body(msg):
         if payload:
             body = payload.decode("utf-8", errors="replace")
     return body
+
+def normalize_text(text):
+    if not text:
+        return ""
+    text = re.sub(r"[*_#`~\[\]]", " ", text)
+    return " ".join(text.lower().split())
+
+def verify_event_provenance(ev, mail_conn=None):
+    """
+    Guarantees no hallucinated event can ever be dispatched or saved.
+    Checks that:
+    1. If not a static baseline event, ev MUST have 'source_uid' and 'source_quote'.
+    2. Fetches the email by source_uid and verifies the quote appears in the body.
+    """
+    if ev.get("is_baseline", False):
+        return True
+
+    source_uid = ev.get("source_uid")
+    source_quote = ev.get("source_quote")
+
+    if not source_uid or not source_quote:
+        raise ValueError(
+            f"Provenance Error: Event '{ev.get('title')}' is missing 'source_uid' or 'source_quote'. "
+            f"Every school event/deadline must be verified against an inbound email."
+        )
+
+    close_conn = False
+    if mail_conn is None:
+        creds = load_credentials()
+        acc = creds.get("dailey_personal")
+        if not acc or not acc.get("password"):
+            raise ValueError("Provenance Error: No email credentials found to verify event against inbox.")
+        mail_conn = imaplib.IMAP4_SSL("imap.gmail.com")
+        mail_conn.login(acc["email"], acc["password"])
+        mail_conn.select('"[Gmail]/All Mail"', readonly=True)
+        close_conn = True
+
+    try:
+        typ, data = mail_conn.uid("fetch", str(source_uid).encode("utf-8"), "(RFC822)")
+        if typ != "OK" or not data or not data[0]:
+            raise ValueError(f"Provenance Error: Email UID '{source_uid}' not found in mailbox.")
+
+        msg = email.message_from_bytes(data[0][1])
+        sender = _decode_mime(msg.get("From"))
+        body = _get_email_body(msg)
+
+        valid_senders = [
+            "@mbmapg.org",
+            "@mbmaclass.com",
+            "@mbmacademy.com",
+            "@online.procaresoftware.com",
+            "notifications@procaremessagingservice.com",
+            "megan.a.shaver@gmail.com"
+        ]
+        if not any(dom in sender.lower() for dom in valid_senders):
+            raise ValueError(
+                f"Provenance Error: Sender '{sender}' of UID {source_uid} is not an authorized MBMA sender."
+            )
+
+        norm_quote = normalize_text(source_quote)
+        norm_body = normalize_text(body)
+        if norm_quote not in norm_body:
+            raise ValueError(
+                f"Provenance Error: Cited quote '{source_quote}' was NOT found in email UID {source_uid} "
+                f"from {sender} (Subject: '{_decode_mime(msg.get('Subject'))}'). Rejecting event."
+            )
+
+        print(f"🔒 Provenance Verified: '{ev.get('title')}' matches email UID {source_uid} from {sender}.")
+        return True
+    finally:
+        if close_conn and mail_conn:
+            try:
+                mail_conn.close()
+                mail_conn.logout()
+            except Exception:
+                pass
+
+def add_event_with_provenance(state, args, dry_run=False):
+    if not args.add_event or not args.title or not args.start or not args.end:
+        print("❌ --add-event requires --title, --start, and --end arguments.", file=sys.stderr)
+        sys.exit(1)
+
+    ev = {
+        "id": args.add_event,
+        "title": args.title,
+        "start": args.start,
+        "end": args.end,
+        "location": args.location or MBMA_LOCATION,
+        "description": args.description or "",
+        "status": "CONFIRMED",
+        "sequence": 0,
+        "source_uid": str(args.source_uid) if args.source_uid else None,
+        "source_quote": args.source_quote,
+        "is_baseline": False
+    }
+    if args.rrule:
+        ev["rrule"] = args.rrule
+
+    # Verify provenance before writing to state or sending
+    verify_event_provenance(ev)
+
+    if not dry_run:
+        state["events"][ev["id"]] = ev
+        save_state(state)
+        export_combined_ics(list(state["events"].values()))
+        print(f"🎉 Successfully added verified event '{ev['title']}' ({ev['id']}) to ledger.")
+        if args.dispatch:
+            send_event_invite(ev, method="REQUEST", dry_run=False)
+            ev["last_dispatched_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            save_state(state)
+    else:
+        print(f"📧 [Dry Run] Event '{ev['title']}' passed provenance check and would be saved.")
+    return ev
 
 def scan_recent_emails(state, dry_run=False, days=14, apply_label=True, archive=False):
     """
@@ -550,6 +680,16 @@ def main():
     parser.add_argument("--send-all", action="store_true", help="Send calendar invites for all events")
     parser.add_argument("--send-event", help="Send invite for a specific event ID")
     parser.add_argument("--cancel", action="store_true", help="Send cancellation (METHOD:CANCEL)")
+    parser.add_argument("--add-event", help="Event ID to add with strict provenance verification")
+    parser.add_argument("--title", help="Title of event to add")
+    parser.add_argument("--start", help="Start time in ISO format (YYYY-MM-DDTHH:MM:SS)")
+    parser.add_argument("--end", help="End time in ISO format (YYYY-MM-DDTHH:MM:SS)")
+    parser.add_argument("--location", default=MBMA_LOCATION, help="Location of event")
+    parser.add_argument("--description", default="", help="Description of event")
+    parser.add_argument("--source-uid", help="IMAP Email UID verifying event")
+    parser.add_argument("--source-quote", help="Verbatim quote from email verifying event date/deadline")
+    parser.add_argument("--rrule", help="Recurrence rule (e.g. FREQ=YEARLY)")
+    parser.add_argument("--dispatch", action="store_true", help="Dispatch invites immediately when adding event")
     parser.add_argument("--scan", action="store_true", help="Scan recent emails for school event updates")
     parser.add_argument("--no-label", action="store_true", help="Skip applying 'School/MBMA' Gmail label")
     parser.add_argument("--archive", action="store_true", help="Archive scanned emails from INBOX to All Mail")
@@ -560,6 +700,10 @@ def main():
 
     state = load_state()
     events = list(state["events"].values())
+
+    if args.add_event:
+        add_event_with_provenance(state, args, dry_run=args.dry_run)
+        return
 
     if args.export_ics or not any([args.send_all, args.send_event, args.scan]):
         export_combined_ics(events)
