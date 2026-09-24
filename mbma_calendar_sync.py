@@ -58,12 +58,12 @@ INITIAL_EVENTS = [
     {
         "id": "halloween-art-deadline-20260923",
         "title": "MBMA: Halloween Art Contest Deadline",
-        "start": "2026-09-23T08:00:00",
-        "end": "2026-09-23T16:00:00",
+        "start": "2026-09-29T08:00:00",
+        "end": "2026-09-29T16:00:00",
         "location": MBMA_LOCATION,
-        "description": "Deadline to submit student Halloween Art Contest posters on the official form.",
+        "description": "Deadline to submit student Halloween Art Contest posters on the official form. (Extended to Tuesday, September 29, 2026 by MBMA Parent Group).",
         "status": "CONFIRMED",
-        "sequence": 0
+        "sequence": 1
     },
     {
         "id": "directory-deadline-20261009",
@@ -204,6 +204,27 @@ INITIAL_EVENTS = [
         "description": "End of school year celebration Popsicle Party!",
         "status": "CONFIRMED",
         "sequence": 0
+    },
+    {
+        "id": "emergency-comfort-kit-20260925",
+        "title": "🎒 MBMA: Emergency Comfort Kit Due (Nellie)",
+        "start": "2026-09-25T08:00:00",
+        "end": "2026-09-25T08:30:00",
+        "location": MBMA_LOCATION,
+        "description": "Emergency Comfort Kit due for Nellie in Ms. Graciela's classroom (K-2 / Children's House).\n\n📦 Kit Checklist:\n• 1-gallon Ziploc bag clearly labeled with Nellie Kluck's name\n• Family photo\n• Reassuring / comforting note from parents\n• Complete change of clothes (shirt, pants, underwear, socks)\n\nTurn in at morning drop-off on Friday, Sept 25.",
+        "status": "CONFIRMED",
+        "sequence": 0
+    },
+    {
+        "id": "ms-graciela-birthday",
+        "title": "🎂 MBMA: Ms. Graciela's Birthday",
+        "start": "2027-08-06T08:00:00",
+        "end": "2027-08-06T17:00:00",
+        "location": MBMA_LOCATION,
+        "description": "Ms. Graciela Berumen's Birthday (Nellie's Teacher at MBMA - Children's House / K-2).\n\n🎁 Ms. Graciela's Favorites Profile:\n• Stores: Macy’s, Nordstrom, Target\n• Gift Cards: Starbucks, Amazon\n• Favorite Colors: Black, red, pink, turquoise\n• Favorite Flowers: Orchids\n• Favorite Restaurants: P.F. Chang’s, California Pizza Kitchen, Lorna’s\n• Gifts to Avoid: Creams, lotions, and candles\n\nRoom Parent Coordinator: Megan Shaver (megan.a.shaver@gmail.com)\nVenmo: @Megan-Shaver-MBMA (last 4 digits 8841)\nZelle: megan.a.shaver@gmail.com",
+        "status": "CONFIRMED",
+        "rrule": "FREQ=YEARLY",
+        "sequence": 0
     }
 ]
 
@@ -230,7 +251,7 @@ def generate_ics_invite(ev, method="REQUEST"):
     s_dt = datetime.datetime.fromisoformat(ev["start"])
     e_dt = datetime.datetime.fromisoformat(ev["end"])
     fmt = "%Y%m%dT%H%M%S"
-    uid = f"mbma-v2-{ev['id']}@ldk-international.com"
+    uid = ev.get("uid") or f"mbma-v2-{ev['id']}@ldk-international.com"
     now_str = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     seq = ev.get("sequence", 0)
     status = "CANCELLED" if method == "CANCEL" else ev.get("status", "CONFIRMED")
@@ -251,6 +272,10 @@ def generate_ics_invite(ev, method="REQUEST"):
         "ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=Dailey Kluck:mailto:dailey.kluck@gmail.com",
         f"DTSTART;TZID=America/Los_Angeles:{s_dt.strftime(fmt)}",
         f"DTEND;TZID=America/Los_Angeles:{e_dt.strftime(fmt)}",
+    ]
+    if ev.get("rrule"):
+        lines.append(f"RRULE:{ev['rrule']}")
+    lines.extend([
         f"SUMMARY:{ev['title']}",
         f"DESCRIPTION:{ev['description'].replace(chr(10), '\n')}",
         f"LOCATION:{ev['location'].replace(chr(10), ' ')}",
@@ -262,7 +287,7 @@ def generate_ics_invite(ev, method="REQUEST"):
         "END:VALARM",
         "END:VEVENT",
         "END:VCALENDAR"
-    ]
+    ])
     return "\r\n".join(lines)
 
 def generate_gcal_link(ev):
@@ -277,6 +302,8 @@ def generate_gcal_link(ev):
         "location": ev["location"],
         "ctz": "America/Los_Angeles"
     }
+    if ev.get("rrule"):
+        params["recur"] = f"RRULE:{ev['rrule']}"
     return f"https://calendar.google.com/calendar/render?{urllib.parse.urlencode(params)}"
 
 def send_event_invite(ev, method="REQUEST", dry_run=False):
@@ -286,13 +313,15 @@ def send_event_invite(ev, method="REQUEST", dry_run=False):
     s_dt = datetime.datetime.fromisoformat(ev["start"])
     time_str = s_dt.strftime("%A, %B %d, %Y at %-I:%M %p") if "T" in ev["start"] and not ev["start"].endswith("T08:00:00") else s_dt.strftime("%A, %B %d, %Y")
     
-    subject_prefix = "📅 Invitation: " if method == "REQUEST" else "❌ Cancelled: "
+    is_update = ev.get("sequence", 0) > 0 and method == "REQUEST"
+    subject_prefix = "📅 Updated: " if is_update else ("📅 Invitation: " if method == "REQUEST" else "❌ Cancelled: ")
     subject = f"{subject_prefix}{ev['title']} ({s_dt.strftime('%b %d')})"
     
+    header_title = f"[UPDATED] {ev['title']}" if is_update else ev['title']
     html_body = f"""
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; color: #2D3748; line-height: 1.5;">
       <div style="border-bottom: 2px solid #3182CE; padding-bottom: 12px; margin-bottom: 16px;">
-        <h2 style="color: #2B6CB0; margin: 0 0 6px 0;">{ev['title']}</h2>
+        <h2 style="color: #2B6CB0; margin: 0 0 6px 0;">{header_title}</h2>
         <span style="font-size: 14px; color: #718096;">MBMA School & Parent Group Calendar Update</span>
       </div>
       
@@ -346,19 +375,24 @@ def export_combined_ics(events):
         s_dt = datetime.datetime.fromisoformat(ev["start"])
         e_dt = datetime.datetime.fromisoformat(ev["end"])
         fmt = "%Y%m%dT%H%M%S"
-        uid = f"mbma-v2-{ev['id']}@ldk-international.com"
-        lines.extend([
+        uid = ev.get("uid") or f"mbma-v2-{ev['id']}@ldk-international.com"
+        vevent_lines = [
             "BEGIN:VEVENT",
             f"UID:{uid}",
             f"DTSTAMP:{now_str}",
             f"DTSTART;TZID=America/Los_Angeles:{s_dt.strftime(fmt)}",
             f"DTEND;TZID=America/Los_Angeles:{e_dt.strftime(fmt)}",
+        ]
+        if ev.get("rrule"):
+            vevent_lines.append(f"RRULE:{ev['rrule']}")
+        vevent_lines.extend([
             f"SUMMARY:{ev['title']}",
             f"DESCRIPTION:{ev['description'].replace(chr(10), '\n')}",
             f"LOCATION:{ev['location'].replace(chr(10), ' ')}",
             "STATUS:CONFIRMED",
             "END:VEVENT"
         ])
+        lines.extend(vevent_lines)
     lines.append("END:VCALENDAR")
     COMBINED_ICS_FILE.write_text("\r\n".join(lines))
     print(f"✅ Saved combined ICS file to: {COMBINED_ICS_FILE}")
@@ -525,6 +559,7 @@ def main():
     parser = argparse.ArgumentParser(description="MBMA Calendar Sync & Dispatcher")
     parser.add_argument("--send-all", action="store_true", help="Send calendar invites for all events")
     parser.add_argument("--send-event", help="Send invite for a specific event ID")
+    parser.add_argument("--cancel", action="store_true", help="Send cancellation (METHOD:CANCEL)")
     parser.add_argument("--scan", action="store_true", help="Scan recent emails for school event updates")
     parser.add_argument("--no-label", action="store_true", help="Skip applying 'School/MBMA' Gmail label")
     parser.add_argument("--archive", action="store_true", help="Archive scanned emails from INBOX to All Mail")
@@ -556,9 +591,12 @@ def main():
         if not ev:
             print(f"❌ Event ID '{args.send_event}' not found in state ledger.")
             sys.exit(1)
-        send_event_invite(ev, method="REQUEST", dry_run=args.dry_run)
+        method = "CANCEL" if args.cancel else "REQUEST"
+        send_event_invite(ev, method=method, dry_run=args.dry_run)
         if not args.dry_run:
             ev["last_dispatched_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            if args.cancel:
+                ev["status"] = "CANCELLED"
             save_state(state)
 
     if args.scan:
