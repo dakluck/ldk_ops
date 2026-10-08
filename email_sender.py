@@ -23,6 +23,11 @@ def load_credentials():
             "email": "dailey.kluck@gmail.com",
             "password": os.environ.get("GMAIL_DAILEY_PERSONAL_PASSWORD", ""),
             "sender_name": "Dailey Kluck"
+        },
+        "dailey_reference": {
+            "email": "dailey@thereference.app",
+            "password": os.environ.get("GMAIL_DAILEY_REFERENCE_PASSWORD", ""),
+            "sender_name": "Dailey Kluck"
         }
     }
 
@@ -43,6 +48,8 @@ def load_credentials():
                     creds["dailey_ldk"]["password"] = v
                 elif k == "GMAIL_DAILEY_PERSONAL_PASSWORD":
                     creds["dailey_personal"]["password"] = v
+                elif k == "GMAIL_DAILEY_REFERENCE_PASSWORD":
+                    creds["dailey_reference"]["password"] = v
 
     # Fallback to Himalaya config.toml
     himalaya_conf = Path.home() / ".config" / "himalaya" / "config.toml"
@@ -62,11 +69,12 @@ def load_credentials():
 
 DEFAULT_RECIPIENTS = ["lmdobashi@gmail.com", "dailey.kluck@gmail.com"]
 
-def send_email(subject, body, recipients=None, from_account="leo", is_html=False, ics_content=None, ics_filename="invite.ics", ics_method="REQUEST"):
+def send_email(subject, body, recipients=None, from_account="leo", is_html=False, ics_content=None, ics_filename="invite.ics", ics_method="REQUEST", extra_headers=None, attachments=None, inline_images=None):
     """
     Sends an email to specified recipients using configured SMTP credentials.
     Default recipients: ['lmdobashi@gmail.com', 'dailey.kluck@gmail.com']
     Supports native iCalendar invite delivery (default method=REQUEST, or CANCEL) when ics_content is provided.
+    Supports file attachments and inline CID embedded images.
     """
     if recipients is None:
         recipients = DEFAULT_RECIPIENTS
@@ -98,6 +106,7 @@ def send_email(subject, body, recipients=None, from_account="leo", is_html=False
 
         cal_part = MIMEText(ics_content, f"calendar; method={ics_method}; charset=UTF-8")
         cal_part.add_header("Content-Disposition", f'inline; filename="{ics_filename}"')
+        cal_part.add_header("Content-Class", "urn:content-classes:calendarmessage")
         alt_part.attach(cal_part)
         msg.attach(alt_part)
 
@@ -105,7 +114,66 @@ def send_email(subject, body, recipients=None, from_account="leo", is_html=False
         att_part.set_payload(ics_content.encode("utf-8"))
         encoders.encode_base64(att_part)
         att_part.add_header("Content-Disposition", f'attachment; filename="{ics_filename}"')
+        att_part.add_header("Content-Class", "urn:content-classes:calendarmessage")
         msg.attach(att_part)
+    elif attachments or inline_images:
+        from email.mime.image import MIMEImage
+        from email.mime.base import MIMEBase
+        from email import encoders
+        import mimetypes
+        import re
+
+        msg = MIMEMultipart("mixed")
+        msg["Subject"] = subject
+        msg["From"] = f"{sender_name} <{sender_email}>"
+        msg["To"] = ", ".join(recipients)
+
+        if inline_images:
+            related_part = MIMEMultipart("related")
+            alt_part = MIMEMultipart("alternative")
+            if is_html:
+                plain_text = re.sub(r'<[^>]+>', ' ', body)
+                plain_text = re.sub(r'\s+', ' ', plain_text).strip()
+                alt_part.attach(MIMEText(plain_text, "plain", "utf-8"))
+                alt_part.attach(MIMEText(body, "html", "utf-8"))
+            else:
+                alt_part.attach(MIMEText(body, "plain", "utf-8"))
+            related_part.attach(alt_part)
+
+            for cid, img_ref in inline_images.items():
+                p = Path(img_ref)
+                if p.exists():
+                    with open(p, "rb") as f:
+                        img_data = f.read()
+                    subtype = p.suffix.lstrip(".").lower()
+                    if subtype == "jpg":
+                        subtype = "jpeg"
+                    mime_img = MIMEImage(img_data, _subtype=subtype)
+                    mime_img.add_header("Content-ID", f"<{cid}>")
+                    mime_img.add_header("Content-Disposition", "inline", filename=p.name)
+                    related_part.attach(mime_img)
+            msg.attach(related_part)
+        else:
+            alt_part = MIMEMultipart("alternative")
+            subtype = "html" if is_html else "plain"
+            alt_part.attach(MIMEText(body, subtype, "utf-8"))
+            msg.attach(alt_part)
+
+        if attachments:
+            for att in attachments:
+                p = Path(att)
+                if not p.exists():
+                    continue
+                ctype, encoding = mimetypes.guess_type(str(p))
+                if ctype is None or encoding is not None:
+                    ctype = "application/octet-stream"
+                maintype, subtype = ctype.split("/", 1)
+                with open(p, "rb") as f:
+                    part = MIMEBase(maintype, subtype)
+                    part.set_payload(f.read())
+                encoders.encode_base64(part)
+                part.add_header("Content-Disposition", f'attachment; filename="{p.name}"')
+                msg.attach(part)
     else:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
@@ -114,6 +182,10 @@ def send_email(subject, body, recipients=None, from_account="leo", is_html=False
 
         subtype = "html" if is_html else "plain"
         msg.attach(MIMEText(body, subtype, "utf-8"))
+
+    if extra_headers:
+        for hk, hv in extra_headers.items():
+            msg[hk] = hv
 
     try:
         server = smtplib.SMTP("smtp.gmail.com", 587)
