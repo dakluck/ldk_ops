@@ -120,3 +120,15 @@ If you're on Kauai and want to test **Oakley Prizm (Daily / Rose Gold / Deep Wat
    * **Sunglass Hut:** Best North Shore stop for comparing **Oakley Prizm** vs. **Maui Jim** vs. **Costa**.
 2. **Hanalei Surf Co.** *(5-5161 Kuhio Hwy, Hanalei — across from Hanalei Center)*
    * Legendary North Shore surf shop carrying **Smith ChromaPop**, **Oakley Prizm**, **Maui Jim**, and **Costa** waterman frames.
+
+
+---
+
+## 7. Cortical Processing: Why the Parvocellular ($L - M$) Pathway Reacts So Strongly
+
+*[Peer-to-peer neuro-ophthalmic summary & narrated 1080p video (`./assets/protan_prizm_neuro_optics.mp4`):]*
+
+> V1 and the parvocellular pathway don't actually care about raw L or M cone photon counts—they compute the **opponent difference signal ($L - M$)**.
+> - When someone with normal trichromacy puts on a Prizm lens, their $L - M$ opponent channel is already operating near full dynamic range, so their visual cortex just interprets the lens as a pleasant, slightly warmer saturation boost (~10–15% more pop).
+> - In Dailey’s visual cortex, because his L and M inputs are normally correlated by that 550–585 nm overlap, his parvocellular $L - M$ opponent neurons spend his whole life firing near baseline noise—forcing his brain to rely almost entirely on the magnocellular luminance ($L + M$) and blue-yellow ($S - (L+M)$) pathways to find edges and depth. Meanwhile, cortical gain control ("von Kries adaptation") is cranked all the way up on that weak $L - M$ channel, waiting for a differential signal.
+> - The moment a Rose/Copper notch lens strips out the 560–585 nm common-mode noise and boosts relative red luminance, it feeds a clean differential into that high-gain $L - M$ pathway. Within seconds, chromatic adaptation normalizes the rose cast of the lens so "white" looks white again, and his visual cortex suddenly gets **chromatic edge and depth segregation** where objects previously had zero luminance contrast (like red flowers or brown dirt against green foliage). To his brain, things don't just look "tinted"—objects literally separate into distinct planes.
