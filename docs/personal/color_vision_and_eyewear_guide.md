@@ -132,3 +132,30 @@ If you're on Kauai and want to test **Oakley Prizm (Daily / Rose Gold / Deep Wat
 > - When someone with normal trichromacy puts on a Prizm lens, their $L - M$ opponent channel is already operating near full dynamic range, so their visual cortex just interprets the lens as a pleasant, slightly warmer saturation boost (~10–15% more pop).
 > - In Dailey’s visual cortex, because his L and M inputs are normally correlated by that 550–585 nm overlap, his parvocellular $L - M$ opponent neurons spend his whole life firing near baseline noise—forcing his brain to rely almost entirely on the magnocellular luminance ($L + M$) and blue-yellow ($S - (L+M)$) pathways to find edges and depth. Meanwhile, cortical gain control ("von Kries adaptation") is cranked all the way up on that weak $L - M$ channel, waiting for a differential signal.
 > - The moment a Rose/Copper notch lens strips out the 560–585 nm common-mode noise and boosts relative red luminance, it feeds a clean differential into that high-gain $L - M$ pathway. Within seconds, chromatic adaptation normalizes the rose cast of the lens so "white" looks white again, and his visual cortex suddenly gets **chromatic edge and depth segregation** where objects previously had zero luminance contrast (like red flowers or brown dirt against green foliage). To his brain, things don't just look "tinted"—objects literally separate into distinct planes.
+
+
+---
+
+## 8. Current Eyewear Inventory & Multi-Brand Master Cheat Sheet
+
+### ✅ Purchased (October 21, 2026 — Kauaʻi, HI)
+* **Frame:** **Oakley Holbrook XL**
+* **Lens:** **Prizm Deep Water Polarized (`12% VLT`, Rose Base + Blue-Silver Iridium Mirror)**
+* **Why This Exact Spec Wins for Protan Vision:**
+  1. **Rose Base Underneath:** Unlike `Prizm Black` or `Prizm Sapphire` (which use flat neutral grey bases), `Prizm Deep Water Polarized` is built on Oakley's **Rose spectral-notch base**—carving out the 560–585 nm yellow-green L/M overlap while keeping long-wavelength red transmission wide open.
+  2. **The Mirror Paradox in Your Favor:** The blue-silver outer mirror reflects harsh short-wavelength blue/cyan glare off the front of the lens while passing warm red photons straight through to your L-cones.
+  3. **12% VLT Sweet Spot:** Dark enough for bright Hawaiian / San Diego sun and open water without dimming deep reds into shadow.
+
+### Multi-Brand Counter Cheat Sheet (For Future Pairs)
+
+| Brand | 🥇 #1 Best Polarized Lens | 🥈 #2 Backup | ❌ Popular Trap Lens to Skip |
+| :--- | :--- | :--- | :--- |
+| **Oakley** | **Prizm Rose Gold / Daily Polarized** *(or **Prizm Deep Water Polarized**)* | **Prizm Tungsten Polarized** *(Warm Bronze base)* | **Prizm Ruby Polarized** *(reflects red away)* & **Prizm Black / Sapphire** *(Grey base)* |
+| **Maui Jim** | **Maui Rose®** *(SuperThin Glass)* | **HCL® Bronze** | **Neutral Grey** & **Blue Hawaii** *(Grey base)* |
+| **Costa Del Mar** | **580G Copper Silver Mirror** *(12% VLT)* | **580G Copper** or **580G Green Mirror** *(Copper base inside)* | **580G Blue Mirror** & **Gray Silver Mirror** *(Grey base)* |
+| **Smith Optics** | **ChromaPop™ Polarized Ignitor** | **ChromaPop™ Rose Gold / Bronze Mirror** | **ChromaPop™ Red Mirror** & **Gray Green** |
+| **Ray-Ban** | **Chromance Polarized Brown / Copper** | **B-15 Polarized** *(Warm Brown)* | **G-15 Green Polarized** *(buries reds for Protans)* |
+| **Serengeti** | **Sedona® Polarized** *(Rose Glass)* | **Drivers® Polarized** *(Amber-Copper)* | **555nm® / 555nm Blue** *(green-tuned base)* |
+| **Bajío** | **LAPIS™ Rose Mirror / Violet Mirror** | **LAPIS™ Copper** | **Blue Mirror** *(Grey base)* |
+| **Kaenon** | **SR-91® Ultra Copper 12** | **SR-91® Brown 12** | **Grey 12** & **Pacific Blue Mirror** |
+| **Bollé** | **Volt+™ Ultraviolet Polarized** *(Rose base)* | **Volt+™ Offshore Blue Polarized** | **Volt+™ Gun / Cold White** |
