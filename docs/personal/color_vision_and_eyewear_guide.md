@@ -159,3 +159,101 @@ If you're on Kauai and want to test **Oakley Prizm (Daily / Rose Gold / Deep Wat
 | **Bajío** | **LAPIS™ Rose Mirror / Violet Mirror** | **LAPIS™ Copper** | **Blue Mirror** *(Grey base)* |
 | **Kaenon** | **SR-91® Ultra Copper 12** | **SR-91® Brown 12** | **Grey 12** & **Pacific Blue Mirror** |
 | **Bollé** | **Volt+™ Ultraviolet Polarized** *(Rose base)* | **Volt+™ Offshore Blue Polarized** | **Volt+™ Gun / Cold White** |
+
+
+---
+
+## 9. Hyperlinked Frame & Lens Directory (Oakley & Maui Jim)
+
+### Oakley Frames by Protan-Optimized Prizm Lens
+
+#### 1. Prizm Deep Water Polarized (`12% VLT` • Rose Base + Blue-Silver Mirror)
+* **Lifestyle / Square:**
+  * [Oakley Holbrook XL — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9417?variant=888392405296) *(Owned)*
+  * [Oakley Holbrook (Standard) — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9102)
+  * [Oakley Sylas — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9448)
+  * [Oakley Leffingwell — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9100)
+  * [Oakley HSTN — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9464)
+* **Active / Sport / Waterman:**
+  * [Oakley Split Shot — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9416?variant=888392374745)
+  * [Oakley Portal X — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9460?variant=888392475602)
+  * [Oakley Gibston — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9449?variant=888392454911)
+  * [Oakley Turbine — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9263?variant=888392280671)
+  * [Oakley Flak 2.0 XL — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9188?variant=888392279736)
+  * [Oakley Radar EV Path — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9208?variant=888392279903)
+  * [Oakley Clifden — Prizm Deep Water Polarized](https://www.oakley.com/en-us/product/W0OO9440)
+
+#### 2. Prizm Tungsten Polarized (`14% VLT` • Warm Bronze Base + Subtle Bronze Mirror)
+* **Lifestyle / Square:**
+  * [Oakley Holbrook XL — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9417?variant=888392336422)
+  * [Oakley Holbrook (Standard) — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9102?variant=888392260185)
+  * [Oakley Holbrook Metal — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4123)
+  * [Oakley Sylas — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9448?variant=888392454645)
+  * [Oakley Latch — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9265)
+  * [Oakley Thurso — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9286)
+  * [Oakley Manorburn — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9479)
+  * [Oakley Parlay — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4143)
+* **Aviator / Wire:**
+  * [Oakley Gauge 8 (Large) — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4124?variant=888392271365)
+  * [Oakley Contrail — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4147)
+  * [Oakley Ejector — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4142?variant=888392466839)
+  * [Oakley Savitar — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO4145)
+* **Sport / Wrap:**
+  * [Oakley Flak 2.0 XL — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9188)
+  * [Oakley Gibston — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9449?variant=888392454881)
+  * [Oakley Split Shot — Prizm Tungsten Polarized](https://www.oakley.com/en-us/product/W0OO9416?variant=888392374738)
+
+#### 3. Prizm Rose Gold Polarized (`13% VLT` • Warm Rose-Bronze Base) & Prizm Daily Polarized (`14% VLT`)
+* **Lifestyle / Shield / Custom:**
+  * [Oakley Custom Holbrook XL (Configure with Prizm Rose Gold / Daily / Tungsten / Deep Water)](https://www.oakley.com/en-us/product/WR0OO9102C)
+  * [Oakley HSTN — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9464)
+  * [Oakley HSTN Metal — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9279)
+  * [Oakley BXTR — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9280)
+  * [Oakley Corridor — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9248)
+  * [Oakley Latch Panel — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9404)
+  * [Oakley Frogskins — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO9013)
+  * [Oakley Contrail — Prizm Rose Gold Polarized](https://www.oakley.com/en-us/product/W0OO4147)
+  * [Oakley Custom Builder (All Frames)](https://www.oakley.com/en-us/custom)
+
+---
+
+### Maui Jim Frames in Maui Rose® (`R` SKU) & HCL® Bronze (`H` SKU)
+
+#### 1. Maui Rose® (`R` / `RS` Prefix — Warm Rose Base + 580 nm Rare-Earth Notch)
+* **Lifestyle / Square:**
+  * [Maui Jim Red Sands — Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Red+Sands)
+  * [Maui Jim Kawika — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Kawika)
+  * [Maui Jim Aliali (`R342-01`) — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=R342-01)
+  * [Maui Jim Lele Kawa — Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Lele+Kawa)
+  * [Maui Jim Opio (`R616-10`) — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=R616-10)
+* **Sport / Wrap / Waterman:**
+  * [Maui Jim Ho'okipa (`R407-10`) — Tortoise / Maui Rose](https://www.mauijim.com/US/en_US/search/?text=R407-10)
+  * [Maui Jim Ho'okipa Ultra — Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Hookipa+Ultra)
+  * [Maui Jim Peahi (`R202`) — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Peahi)
+  * [Maui Jim Kanaio Coast (`R766`) — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Kanaio+Coast)
+  * [Maui Jim Local Kine — Maui Rose (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Local+Kine)
+  * [Maui Jim Southern Cross — Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Southern+Cross)
+* **Aviator / Wire:**
+  * [Maui Jim Cliff House (`R247`) — Titanium / Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Cliff+House)
+  * [Maui Jim Mavericks (`R264`) — Titanium / Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Mavericks)
+  * [Maui Jim Baby Beach (`R245`) — Titanium / Maui Rose](https://www.mauijim.com/US/en_US/search/?text=Baby+Beach)
+
+#### 2. HCL® Bronze (`H` / `HS` Prefix — Warm Amber-Bronze Base + 580 nm Rare-Earth Notch)
+* **Lifestyle / Square (Holbrook XL Size Match):**
+  * [Maui Jim Onshore (`H798-01`) — Chocolate Fade / HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=H798-01)
+  * [Maui Jim One Way (`H875-10`) — HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=H875-10)
+  * [Maui Jim Pokowai Arch (`H439`) — HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=Pokowai+Arch)
+  * [Maui Jim Kawika (`H257-16M`) — HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=H257-16M)
+  * [Maui Jim Red Sands (`H432`) — HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=Red+Sands)
+* **Sport / Wrap / Waterman:**
+  * [Maui Jim Peahi (`H202-2M`) — Matte Black / HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/shop/sunglasses/wrap/peahi/p/H202-2M)
+  * [Maui Jim Kanaio Coast (`H766`) — HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Kanaio+Coast)
+  * [Maui Jim World Cup (`H266`) — HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=World+Cup)
+  * [Maui Jim Banyans (`H412`) — Rimless Wrap / HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=Banyans)
+  * [Maui Jim Ho'okipa (`H407-26`) — Rootbeer / HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=H407-26)
+  * [Maui Jim Keha (`H661`) — HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=Keha)
+* **Aviator / Wire:**
+  * [Maui Jim Mavericks (`HS264-16`) — Gold Titanium / HCL Bronze](https://www.mauijim.com/US/en_US/shop/sunglasses/aviators/mavericks/p/HS264-16)
+  * [Maui Jim Wiki Wiki (`H246-16`) — Gold Titanium / HCL Bronze](https://www.mauijim.com/US/en_US/search/?text=Wiki+Wiki)
+  * [Maui Jim Castles (`H728`) — Matte Black / HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Castles)
+  * [Maui Jim Guardrails (`H327`) — Titanium / HCL Bronze (SuperThin Glass)](https://www.mauijim.com/US/en_US/search/?text=Guardrails)
